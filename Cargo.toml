@@ -1,0 +1,11 @@
+[package]
+name = "bingers"
+version = "0.1.0"
+authors = ["df5602 <dominik@fankhausers.ch>"]
+
+[dependencies]
+hyper = "*"
+hyper-native-tls = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
