@@ -1,6 +1,6 @@
+extern crate clap;
 extern crate hyper;
 extern crate hyper_native_tls;
-extern crate serde;
 extern crate serde_json;
 
 #[macro_use]
@@ -14,6 +14,8 @@ use hyper::status::StatusCode;
 use hyper::net::HttpsConnector;
 
 use hyper_native_tls::NativeTlsClient;
+
+use clap::{App, Arg, SubCommand};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Network {
@@ -39,11 +41,30 @@ struct SearchResult {
 }
 
 fn main() {
+    let matches = App::new("bingers")
+        .version("0.1")
+        .author("Dominik Fankhauser")
+        .about("Manage your TV shows from the command line")
+        .subcommand(
+            SubCommand::with_name("add").about("Add TV show").arg(
+                Arg::with_name("tv_show")
+                    .required(true)
+                    .index(1)
+                    .value_name("SHOW"),
+            ),
+        )
+        .get_matches();
+
+    let show = match matches.subcommand() {
+        ("add", Some(m)) => m.value_of("tv_show").unwrap(),
+        _ => unimplemented!(),
+    };
+
     let ssl = NativeTlsClient::new().unwrap();
     let connector = HttpsConnector::new(ssl);
     let client = Client::with_connector(connector);
-    let url = "https://api.tvmaze.com/search/shows?q=\"the 100\"";
-    let mut response = match client.get(url).send() {
+    let url = format!("https://api.tvmaze.com/search/shows?q=\"{}\"", show);
+    let mut response = match client.get(&url).send() {
         Ok(response) => {
             if response.status != StatusCode::Ok {
                 panic!("HTTP Error: Received status {}", response.status);
@@ -68,18 +89,17 @@ fn main() {
 
     //TODO: provide unfiltered view as fallback
     for (i, result) in search_results
-            .iter()
-            .filter(|result| result.show.status == "Running")
-            .filter(|result| result.show.language == "English")
-            .enumerate() {
+        .iter()
+        .filter(|result| result.show.status == "Running")
+        .filter(|result| result.show.language == "English")
+        .enumerate()
+    {
         let network_name = match result.show.network {
             Some(ref network) => network.name.clone(),
-            None => {
-                match result.show.web_channel {
-                    Some(ref channel) => channel.name.clone(),
-                    None => "Unknown".to_string(),
-                }
-            }
+            None => match result.show.web_channel {
+                Some(ref channel) => channel.name.clone(),
+                None => "Unknown".to_string(),
+            },
         };
         println!("[{}] {} ({})", i, result.show.name, network_name);
     }
