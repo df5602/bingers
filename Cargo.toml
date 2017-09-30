@@ -5,7 +5,9 @@ authors = ["df5602 <dominik@fankhausers.ch>"]
 
 [dependencies]
 hyper = "*"
-hyper-native-tls = "*"
+hyper-tls = "*"
+futures = "*"
+tokio-core = "*"
 serde = "*"
 serde_json = "*"
 serde_derive = "*"

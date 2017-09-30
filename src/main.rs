@@ -1,19 +1,21 @@
 extern crate clap;
+extern crate futures;
 extern crate hyper;
-extern crate hyper_native_tls;
+extern crate hyper_tls;
 extern crate serde_json;
+extern crate tokio_core;
 
 #[macro_use]
 extern crate serde_derive;
 
-use std::io::Read;
+use std::str::FromStr;
 use std::error::Error;
 
-use hyper::Client;
-use hyper::status::StatusCode;
-use hyper::net::HttpsConnector;
+use hyper::{Client, StatusCode, Uri};
+use hyper_tls::HttpsConnector;
 
-use hyper_native_tls::NativeTlsClient;
+use futures::{future, Future, Stream};
+use tokio_core::reactor::Core;
 
 use clap::{App, Arg, SubCommand};
 
@@ -60,31 +62,45 @@ fn main() {
         _ => unimplemented!(),
     };
 
-    let ssl = NativeTlsClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
-    let url = format!("https://api.tvmaze.com/search/shows?q=\"{}\"", show);
-    let mut response = match client.get(&url).send() {
-        Ok(response) => {
-            if response.status != StatusCode::Ok {
-                panic!("HTTP Error: Received status {}", response.status);
-            }
-            response
+    let mut core = match Core::new() {
+        Ok(core) => core,
+        Err(e) => panic!("Unable to create core: {}", e.description()),
+    };
+    let handle = core.handle();
+
+    let connector = match HttpsConnector::new(4, &handle) {
+        Ok(connector) => connector,
+        Err(e) => panic!("Unable to create HTTPS connector: {}", e.description()),
+    };
+
+    let client = Client::configure().connector(connector).build(&handle);
+
+    let uri = match Uri::from_str(&format!(
+        "https://api.tvmaze.com/search/shows?q=\"{}\"",
+        show
+    )) {
+        Ok(uri) => uri,
+        Err(e) => panic!("Invalid URI: {}", e.description()),
+    };
+
+    let request = client.get(uri).and_then(|res| {
+        if res.status() != StatusCode::Ok {
+            panic!("HTTPS Error: Received status {}", res.status());
         }
-        Err(e) => panic!("Error: {}", e.description()),
-    };
 
-    let mut buf = String::new();
-    match response.read_to_string(&mut buf) {
-        Ok(_) => (),
-        Err(e) => panic!("Error: {}", e.description()),
-    };
+        res.body().concat2().and_then(|body| {
+            let search_results: Vec<SearchResult> = match serde_json::from_slice(&body) {
+                Ok(search_results) => search_results,
+                Err(e) => panic!("Deserialization error: {}", e.description()),
+            };
 
-    //println!("{:#}", buf);
+            future::ok::<_, _>(search_results)
+        })
+    });
 
-    let search_results: Vec<SearchResult> = match serde_json::from_str(&buf) {
-        Ok(search_results) => search_results,
-        Err(e) => panic!("Deserialization Error: {}", e.description()),
+    let search_results = match core.run(request) {
+        Ok(response) => response,
+        Err(e) => panic!("Unable to perform request: {}", e.description()),
     };
 
     //TODO: provide unfiltered view as fallback
