@@ -1,11 +1,11 @@
 use std::str::FromStr;
 use std::error::Error;
 
-use hyper::{Client, StatusCode, Uri};
+use hyper::{self, Client, StatusCode, Uri};
 use hyper::client::HttpConnector;
 use hyper_tls::HttpsConnector;
 
-use futures::{future, Future, Stream};
+use futures::{Future, Stream};
 use tokio_core::reactor::Core;
 
 use serde_json;
@@ -53,7 +53,21 @@ impl TvMazeApi {
         }
     }
 
+    fn get_request(&self, uri: Uri) -> Box<Future<Item = hyper::Chunk, Error = hyper::Error>> {
+        let request = self.client.get(uri);
+
+        Box::new(request.and_then(|res| {
+            if res.status() != StatusCode::Ok {
+                panic!("HTTPS Error: Received status {}", res.status());
+            }
+
+            res.body().concat2()
+        }))
+    }
+
+    /// Searches TvMaze.com for shows with a given name.
     pub fn search_shows(&mut self, show: &str) -> Vec<SearchResult> {
+        // Construct URI
         let uri = match Uri::from_str(&format!(
             "https://api.tvmaze.com/search/shows?q=\"{}\"",
             show
@@ -62,22 +76,20 @@ impl TvMazeApi {
             Err(e) => panic!("Invalid URI: {}", e.description()),
         };
 
-        let request = self.client.get(uri).and_then(|res| {
-            if res.status() != StatusCode::Ok {
-                panic!("HTTPS Error: Received status {}", res.status());
-            }
+        // Send request and get response
+        let response = self.get_request(uri);
 
-            res.body().concat2().and_then(|body| {
-                let search_results: Vec<SearchResult> = match serde_json::from_slice(&body) {
-                    Ok(search_results) => search_results,
-                    Err(e) => panic!("Deserialization error: {}", e.description()),
-                };
-
-                future::ok::<_, _>(search_results)
-            })
+        // Deserialize response into a Vec<SearchResult>
+        let search_results = response.and_then(|body| {
+            let search_results: Vec<SearchResult> = match serde_json::from_slice(&body) {
+                Ok(search_results) => search_results,
+                Err(e) => panic!("Deserialization error: {}", e.description()),
+            };
+            Ok(search_results)
         });
 
-        match self.core.run(request) {
+        // Run future
+        match self.core.run(search_results) {
             Ok(response) => response,
             Err(e) => panic!("Unable to perform request: {}", e.description()),
         }
