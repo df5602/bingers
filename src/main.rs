@@ -9,6 +9,7 @@ extern crate tokio_core;
 extern crate serde_derive;
 
 mod app;
+mod tvmaze_api;
 
 use clap::{Arg, SubCommand};
 
@@ -35,7 +36,7 @@ fn main() {
         .get_matches();
 
     // Dispatch to subcommands
-    let app = App::new();
+    let mut app = App::new();
 
     match matches.subcommand() {
         ("add", Some(m)) => {
