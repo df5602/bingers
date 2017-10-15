@@ -7,7 +7,7 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         Self {
-            api: TvMazeApi::new(),
+            api: TvMazeApi::new(true),
         }
     }
 

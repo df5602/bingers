@@ -36,10 +36,11 @@ pub struct SearchResult {
 pub struct TvMazeApi {
     core: Core,
     client: Client<HttpsConnector<HttpConnector>>,
+    verbose: bool,
 }
 
 impl TvMazeApi {
-    pub fn new() -> Self {
+    pub fn new(verbose: bool) -> Self {
         let core = Core::new().unwrap();
         let handle = core.handle();
 
@@ -50,13 +51,20 @@ impl TvMazeApi {
         Self {
             core: core,
             client: client,
+            verbose: verbose,
         }
     }
 
     fn get_request(&self, uri: Uri) -> Box<Future<Item = hyper::Chunk, Error = hyper::Error>> {
+        let uri_str = uri.clone();
         let request = self.client.get(uri);
+        let verbose = self.verbose;
 
-        Box::new(request.and_then(|res| {
+        Box::new(request.and_then(move |res| {
+            if verbose {
+                println!("{} {}", res.status(), uri_str);
+            }
+
             if res.status() != StatusCode::Ok {
                 panic!("HTTPS Error: Received status {}", res.status());
             }
