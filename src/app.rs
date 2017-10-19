@@ -1,6 +1,6 @@
 use errors::*;
 
-use tvmaze_api::TvMazeApi;
+use tvmaze_api::{Status, TvMazeApi};
 
 pub struct App {
     api: TvMazeApi,
@@ -23,10 +23,13 @@ impl App {
 
         println!();
 
-        //TODO: provide unfiltered view as fallback
+        // TODO: make language user preference
         for (i, result) in search_results
             .iter()
-            .filter(|result| result.show.status == "Running")
+            .filter(|result| {
+                result.show.status == Status::Running || result.show.status == Status::Ended
+                    || result.show.status == Status::ToBeDetermined
+            })
             .filter(|result| result.show.language == "English")
             .enumerate()
         {
@@ -37,7 +40,37 @@ impl App {
                     None => "Unknown".to_string(),
                 },
             };
-            println!("[{}] {} ({})", i, result.show.name, network_name);
+
+            let scheduled_days = if !result.show.schedule.days.is_empty() {
+                if result.show.status == Status::Running {
+                    format!("{:?}s on ", result.show.schedule.days[0])
+                } else {
+                    "".to_string()
+                }
+            } else {
+                "".to_string()
+            };
+
+            let runtime = match result.show.runtime {
+                Some(runtime) => runtime,
+                None => 0,
+            };
+
+            let status = match result.show.status {
+                Status::Ended => " (Ended)",
+                Status::ToBeDetermined => " (TBD)",
+                _ => "",
+            };
+
+            println!(
+                "[{}] {} ({}{}{}, {}')",
+                i,
+                result.show.name,
+                scheduled_days,
+                network_name,
+                status,
+                runtime
+            );
         }
 
         Ok(())

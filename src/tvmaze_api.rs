@@ -16,6 +16,30 @@ pub struct Network {
 }
 
 #[derive(Debug, Deserialize)]
+pub enum Day {
+    Monday,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Schedule {
+    pub days: Vec<Day>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub enum Status {
+    #[serde(rename = "To Be Determined")] ToBeDetermined,
+    #[serde(rename = "In Development")] InDevelopment,
+    Running,
+    Ended,
+}
+
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Show {
     id: usize,
@@ -23,7 +47,9 @@ pub struct Show {
     pub language: String,
     pub network: Option<Network>,
     pub web_channel: Option<Network>,
-    pub status: String,
+    pub status: Status,
+    pub runtime: Option<usize>,
+    pub schedule: Schedule,
 }
 
 #[derive(Debug, Deserialize)]
