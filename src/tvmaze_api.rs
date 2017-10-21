@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::fmt;
 
 use hyper::{self, Client, StatusCode, Uri};
 use hyper::client::HttpConnector;
@@ -26,6 +27,12 @@ pub enum Day {
     Sunday,
 }
 
+impl fmt::Display for Day {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Schedule {
     pub days: Vec<Day>,
@@ -39,6 +46,16 @@ pub enum Status {
     Ended,
 }
 
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Status::ToBeDetermined => write!(f, "TBD"),
+            Status::InDevelopment => write!(f, "In Development"),
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Show {
@@ -50,6 +67,48 @@ pub struct Show {
     pub status: Status,
     pub runtime: Option<usize>,
     pub schedule: Schedule,
+}
+
+impl fmt::Display for Show {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let scheduled_days = if !self.schedule.days.is_empty() {
+            if self.status == Status::Running {
+                format!("{}s on ", self.schedule.days[0])
+            } else {
+                "".to_string()
+            }
+        } else {
+            "".to_string()
+        };
+
+        let network_name = match self.network {
+            Some(ref network) => network.name.clone(),
+            None => match self.web_channel {
+                Some(ref channel) => channel.name.clone(),
+                None => "Unknown".to_string(),
+            },
+        };
+
+        let status = match self.status {
+            Status::Ended | Status::ToBeDetermined => format!(" ({})", self.status),
+            _ => "".to_string(),
+        };
+
+        let runtime = match self.runtime {
+            Some(runtime) => runtime,
+            None => 0,
+        };
+
+        write!(
+            f,
+            "{} ({}{}{}, {}')",
+            self.name,
+            scheduled_days,
+            network_name,
+            status,
+            runtime
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

@@ -33,44 +33,7 @@ impl App {
             .filter(|result| result.show.language == "English")
             .enumerate()
         {
-            let network_name = match result.show.network {
-                Some(ref network) => network.name.clone(),
-                None => match result.show.web_channel {
-                    Some(ref channel) => channel.name.clone(),
-                    None => "Unknown".to_string(),
-                },
-            };
-
-            let scheduled_days = if !result.show.schedule.days.is_empty() {
-                if result.show.status == Status::Running {
-                    format!("{:?}s on ", result.show.schedule.days[0])
-                } else {
-                    "".to_string()
-                }
-            } else {
-                "".to_string()
-            };
-
-            let runtime = match result.show.runtime {
-                Some(runtime) => runtime,
-                None => 0,
-            };
-
-            let status = match result.show.status {
-                Status::Ended => " (Ended)",
-                Status::ToBeDetermined => " (TBD)",
-                _ => "",
-            };
-
-            println!(
-                "[{}] {} ({}{}{}, {}')",
-                i,
-                result.show.name,
-                scheduled_days,
-                network_name,
-                status,
-                runtime
-            );
+            println!("[{}] {}", i, result.show);
         }
 
         Ok(())
