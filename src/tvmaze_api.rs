@@ -147,13 +147,12 @@ impl TvMazeApi {
         &self,
         uri: Uri,
     ) -> Box<Future<Item = hyper::Response, Error = ::errors::Error>> {
-        let uri_cloned = uri.clone();
-        let request = self.client.get(uri);
+        let request = self.client.get(uri.clone());
         let verbose = self.verbose;
 
         Box::new(request.map_err(|e| e.into()).and_then(move |res| {
             if verbose {
-                println!("{} {}", res.status(), uri_cloned);
+                println!("{} {}", res.status(), uri);
             }
 
             if res.status() != StatusCode::Ok {
