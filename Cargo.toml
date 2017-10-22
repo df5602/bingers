@@ -15,3 +15,6 @@ serde_json = "*"
 serde_derive = "*"
 clap = "*"
 error-chain = "*"
+
+[patch.crates-io]
+tokio-retry = { git = "https://github.com/df5602/rust-tokio-retry", branch = "feature/retry-condition" }

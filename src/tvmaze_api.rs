@@ -163,7 +163,7 @@ impl TvMazeApi {
         }))
     }
 
-    /// Make a GET request. Retry if an error occurs.
+    /// Make a GET request. Rate limiting of server is handled with retries.
     ///
     /// `&self` is moved into the returned future, therefore the future can't live longer
     /// than `&self`.
@@ -173,9 +173,15 @@ impl TvMazeApi {
     ) -> Box<Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a> {
         let retry_strategy = FibonacciBackoff::from_millis(1000).take(6);
 
-        let retry_future = Retry::spawn(self.core.borrow().handle(), retry_strategy, move || {
-            self.create_get_request(uri.clone())
-        });
+        let retry_future = Retry::with_condition(
+            self.core.borrow().handle(),
+            retry_strategy,
+            move || self.create_get_request(uri.clone()),
+            Box::new(|e| match *e {
+                Error(ErrorKind::HttpError(status), _) => status == StatusCode::TooManyRequests,
+                _ => false,
+            }),
+        );
 
         Box::new(
             retry_future
