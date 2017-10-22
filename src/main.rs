@@ -5,6 +5,7 @@ extern crate hyper_tls;
 extern crate native_tls;
 extern crate serde_json;
 extern crate tokio_core;
+extern crate tokio_retry;
 
 #[macro_use]
 extern crate serde_derive;

@@ -16,3 +16,12 @@ error_chain! {
         }
     }
 }
+
+impl From<::tokio_retry::Error<Error>> for Error {
+    fn from(retry_error: ::tokio_retry::Error<Error>) -> Self {
+        match retry_error {
+            ::tokio_retry::Error::OperationError(e) => e,
+            ::tokio_retry::Error::TimerError(e) => e.into(),
+        }
+    }
+}

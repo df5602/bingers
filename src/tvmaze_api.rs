@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use std::fmt;
+use std::cell::RefCell;
 
 use hyper::{self, Client, StatusCode, Uri};
 use hyper::client::HttpConnector;
@@ -7,6 +8,8 @@ use hyper_tls::HttpsConnector;
 
 use futures::{Future, Stream};
 use tokio_core::reactor::Core;
+use tokio_retry::Retry;
+use tokio_retry::strategy::FixedInterval;
 
 use errors::*;
 
@@ -118,7 +121,7 @@ pub struct SearchResult {
 }
 
 pub struct TvMazeApi {
-    core: Core,
+    core: RefCell<Core>,
     client: Client<HttpsConnector<HttpConnector>>,
     verbose: bool,
 }
@@ -133,31 +136,51 @@ impl TvMazeApi {
         let client = Client::configure().connector(connector).build(&handle);
 
         Ok(Self {
-            core: core,
+            core: RefCell::new(core),
             client: client,
             verbose: verbose,
         })
     }
 
-    fn get_request(&self, uri: Uri) -> Box<Future<Item = hyper::Chunk, Error = ::errors::Error>> {
-        let uri_str = uri.clone();
+    /// Create a new GET request.
+    fn create_get_request(
+        &self,
+        uri: Uri,
+    ) -> Box<Future<Item = hyper::Response, Error = ::errors::Error>> {
+        let uri_cloned = uri.clone();
         let request = self.client.get(uri);
         let verbose = self.verbose;
 
+        Box::new(request.map_err(|e| e.into()).and_then(move |res| {
+            if verbose {
+                println!("{} {}", res.status(), uri_cloned);
+            }
+
+            if res.status() != StatusCode::Ok {
+                return Err(ErrorKind::HttpError(res.status()).into());
+            }
+
+            Ok(res)
+        }))
+    }
+
+    /// Make a GET request. Retry if an error occurs.
+    ///
+    /// `&self` is moved into the returned future, therefore the future can't live longer
+    /// than `&self`.
+    fn make_get_request<'a>(
+        &'a self,
+        uri: Uri,
+    ) -> Box<Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a> {
+        let retry_strategy = FixedInterval::from_millis(1000).take(3);
+
+        let retry_future = Retry::spawn(self.core.borrow().handle(), retry_strategy, move || {
+            self.create_get_request(uri.clone())
+        });
+
         Box::new(
-            request
+            retry_future
                 .map_err(|e| e.into())
-                .and_then(move |res| {
-                    if verbose {
-                        println!("{} {}", res.status(), uri_str);
-                    }
-
-                    if res.status() != StatusCode::Ok {
-                        return Err(ErrorKind::HttpError(res.status()).into());
-                    }
-
-                    Ok(res)
-                })
                 .and_then(|res| res.body().concat2().map_err(|e| e.into())),
         )
     }
@@ -169,7 +192,7 @@ impl TvMazeApi {
         let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
 
         // Send request and get response
-        let response = self.get_request(uri);
+        let response = self.make_get_request(uri);
 
         // Deserialize response into a Vec<SearchResult>
         let search_results = response.and_then(|body| {
@@ -177,7 +200,11 @@ impl TvMazeApi {
         });
 
         // Run future
+        // `self` is borrowed for the lifetime of the response future, which makes it
+        // impossible to borrow `self` mutably here. The RefCell lets us get around this
+        // restriction.
         self.core
+            .borrow_mut()
             .run(search_results)
             .chain_err(|| "HTTP request failed")
     }
