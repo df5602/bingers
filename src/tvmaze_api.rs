@@ -13,13 +13,13 @@ use tokio_retry::strategy::FibonacciBackoff;
 
 use errors::*;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Network {
     id: usize,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub enum Day {
     Monday,
     Tuesday,
@@ -36,12 +36,12 @@ impl fmt::Display for Day {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
     pub days: Vec<Day>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub enum Status {
     #[serde(rename = "To Be Determined")] ToBeDetermined,
     #[serde(rename = "In Development")] InDevelopment,
@@ -59,7 +59,7 @@ impl fmt::Display for Status {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Show {
     id: usize,
@@ -149,6 +149,10 @@ impl TvMazeApi {
     ) -> Box<Future<Item = hyper::Response, Error = ::errors::Error>> {
         let request = self.client.get(uri.clone());
         let verbose = self.verbose;
+
+        if verbose {
+            println!("GET {}", uri);
+        }
 
         Box::new(request.map_err(|e| e.into()).and_then(move |res| {
             if verbose {

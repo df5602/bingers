@@ -1,16 +1,54 @@
-use errors::*;
+use std::io::{self, Write};
 
-use tvmaze_api::{Status, TvMazeApi};
+use errors::*;
+use tvmaze_api::{Status, TvMazeApi, SearchResult, Show};
 
 pub struct App {
     api: TvMazeApi,
+    verbose: bool,
 }
 
 impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
             api: TvMazeApi::new(true)?,
+            verbose: true,
         })
+    }
+
+    fn select_show(&self, search_results: &Vec<SearchResult>) -> Result<Option<Show>>
+    {
+        // TODO: make language user preference
+        for result in search_results
+            .iter()
+            .filter(|result| {
+                result.show.status == Status::Running || result.show.status == Status::Ended
+                    || result.show.status == Status::ToBeDetermined
+            })
+            .filter(|result| result.show.language == "English")
+        {
+            println!("Found:\n");
+            println!("\t{}\n", result.show);
+            print!("Add show? [y (yes); n (no); a (abort)] ");
+            let _ = io::stdout().flush();
+
+            let mut answer = String::new();
+            io::stdin().read_line(&mut answer)?;
+
+            match answer.as_str().trim() {
+                "y" => {
+                    return Ok(Some(result.show.clone()));
+                },
+                "n" => {},
+                _ => {
+                    println!("Aborted.");
+                    return Ok(None);
+                },
+            }
+        }
+
+        println!("No more shows found.");
+        Ok(None)
     }
 
     /// Add show to list of followed shows.
@@ -21,19 +59,14 @@ impl App {
             .search_shows(show)
             .chain_err(|| format!("Unable to search for show [\"{}\"]", show))?;
 
-        println!();
+        if self.verbose {
+            println!();
+        }
 
-        // TODO: make language user preference
-        for (i, result) in search_results
-            .iter()
-            .filter(|result| {
-                result.show.status == Status::Running || result.show.status == Status::Ended
-                    || result.show.status == Status::ToBeDetermined
-            })
-            .filter(|result| result.show.language == "English")
-            .enumerate()
-        {
-            println!("[{}] {}", i, result.show);
+        let selected_show = self.select_show(&search_results)?;
+
+        if let Some(show) = selected_show {
+            println!("Added \"{}\"", show.name);
         }
 
         Ok(())
