@@ -8,7 +8,7 @@ use hyper_tls::HttpsConnector;
 
 use futures::{Future, Stream};
 use tokio_core::reactor::Core;
-use tokio_retry::Retry;
+use tokio_retry::RetryIf;
 use tokio_retry::strategy::FibonacciBackoff;
 
 use errors::*;
@@ -173,14 +173,14 @@ impl TvMazeApi {
     ) -> Box<Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a> {
         let retry_strategy = FibonacciBackoff::from_millis(1000).take(6);
 
-        let retry_future = Retry::with_condition(
+        let retry_future = RetryIf::spawn(
             self.core.borrow().handle(),
             retry_strategy,
             move || self.create_get_request(uri.clone()),
-            Box::new(|e| match *e {
+            |e: &::errors::Error| match *e {
                 Error(ErrorKind::HttpError(status), _) => status == StatusCode::TooManyRequests,
                 _ => false,
-            }),
+            },
         );
 
         Box::new(
