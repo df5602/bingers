@@ -2,9 +2,11 @@ use std::io::{self, Write};
 
 use errors::*;
 use tvmaze_api::{Status, TvMazeApi, SearchResult, Show};
+use user_data::UserData;
 
 pub struct App {
     api: TvMazeApi,
+    user_data: UserData,
     verbose: bool,
 }
 
@@ -12,6 +14,7 @@ impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
             api: TvMazeApi::new(true)?,
+            user_data: UserData::load(),
             verbose: true,
         })
     }
@@ -47,7 +50,11 @@ impl App {
             }
         }
 
-        println!("No more shows found.");
+        if !search_results.is_empty() {
+            println!("No more matching shows found.");
+        } else {
+            println!("No matching shows found.");
+        }
         Ok(None)
     }
 
@@ -67,8 +74,10 @@ impl App {
 
         if let Some(show) = selected_show {
             println!("Added \"{}\"", show.name);
+            self.user_data.add_show(show);
         }
 
+        self.user_data.store();
         Ok(())
     }
 }

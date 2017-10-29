@@ -15,7 +15,7 @@ use errors::*;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Network {
-    id: usize,
+    pub id: usize,
     pub name: String,
 }
 
@@ -62,7 +62,7 @@ impl fmt::Display for Status {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Show {
-    id: usize,
+    pub id: usize,
     pub name: String,
     pub language: String,
     pub network: Option<Network>,
@@ -70,6 +70,12 @@ pub struct Show {
     pub status: Status,
     pub runtime: Option<usize>,
     pub schedule: Schedule,
+}
+
+impl PartialEq for Show {
+    fn eq(&self, other: &Show) -> bool {
+        self.id == other.id
+    }
 }
 
 impl fmt::Display for Show {

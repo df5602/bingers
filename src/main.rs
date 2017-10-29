@@ -14,8 +14,9 @@ extern crate serde_derive;
 extern crate error_chain;
 
 mod errors;
-mod app;
 mod tvmaze_api;
+mod user_data;
+mod app;
 
 use clap::{Arg, SubCommand};
 
