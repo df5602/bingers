@@ -7,12 +7,18 @@ error_chain! {
         Uri(::hyper::error::UriError);
         Hyper(::hyper::Error);
         SerdeJson(::serde_json::error::Error);
+        AppDirs(::app_dirs::AppDirsError);
     }
 
     errors {
         HttpError(status: StatusCode) {
             description("HTTP error"),
             display("HTTP error: Received status code {}", status),
+        }
+
+        UserDataVersionMismatch(expected: u32, actual: u32) {
+            description("User data version mismatch"),
+            display("User data version mismatch [Expected: < {}, actual: {}]", expected, actual),
         }
     }
 }

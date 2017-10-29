@@ -13,13 +13,13 @@ use tokio_retry::strategy::FibonacciBackoff;
 
 use errors::*;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Network {
     pub id: usize,
     pub name: String,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Day {
     Monday,
     Tuesday,
@@ -36,12 +36,12 @@ impl fmt::Display for Day {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Schedule {
     pub days: Vec<Day>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum Status {
     #[serde(rename = "To Be Determined")] ToBeDetermined,
     #[serde(rename = "In Development")] InDevelopment,
@@ -59,7 +59,7 @@ impl fmt::Display for Status {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Show {
     pub id: usize,

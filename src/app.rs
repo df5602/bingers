@@ -14,7 +14,7 @@ impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
             api: TvMazeApi::new(true)?,
-            user_data: UserData::load(),
+            user_data: UserData::load()?,
             verbose: true,
         })
     }
@@ -75,9 +75,9 @@ impl App {
         if let Some(show) = selected_show {
             println!("Added \"{}\"", show.name);
             self.user_data.add_show(show);
+            self.user_data.store()?;
         }
 
-        self.user_data.store();
         Ok(())
     }
 }
