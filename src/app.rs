@@ -28,7 +28,15 @@ impl App {
                 result.show.status == Status::Running || result.show.status == Status::Ended
                     || result.show.status == Status::ToBeDetermined
             })
-            .filter(|result| result.show.language == "English")
+            .filter(|result| {
+                if let Some(ref language) = result.show.language {
+                    if language == "English" {
+                        return true;
+                    }
+                }
+
+                false
+            })
         {
             println!("Found:\n");
             println!("\t{}\n", result.show);

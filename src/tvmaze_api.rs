@@ -64,7 +64,7 @@ impl fmt::Display for Status {
 pub struct Show {
     pub id: usize,
     pub name: String,
-    pub language: String,
+    pub language: Option<String>,
     pub network: Option<Network>,
     pub web_channel: Option<Network>,
     pub status: Status,

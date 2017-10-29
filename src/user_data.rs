@@ -133,7 +133,7 @@ mod tests {
         Show {
             id: 7480,
             name: "Star Trek: Discovery".to_string(),
-            language: "English".to_string(),
+            language: Some("English".to_string()),
             network: None,
             web_channel: Some(
                 Network {
@@ -153,7 +153,7 @@ mod tests {
         Show {
             id: 20263,
             name: "The Orville".to_string(),
-            language: "English".to_string(),
+            language: Some("English".to_string()),
             network: Some(
                 Network {
                     id: 4,
