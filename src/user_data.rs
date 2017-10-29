@@ -45,7 +45,7 @@ impl UserData {
         let mut user_data_file = user_data_path.clone();
         user_data_file.push("user_data.json");
 
-        match File::open(user_data_file.clone()) {
+        match File::open(&user_data_file) {
             Ok(mut file) => {
                 // Read user data from file
                 let mut file_content = String::new();
@@ -88,7 +88,7 @@ impl UserData {
         user_data_json.push("user_data.json");
 
         // Create directory (if necessary)
-        fs::create_dir_all(self.path.clone())
+        fs::create_dir_all(&self.path)
             .chain_err(|| format!("Unable to create user data directory {:?}", self.path))?;
 
         // Create temporary file and serialize user data into it
@@ -96,7 +96,7 @@ impl UserData {
                                         .write(true)
                                         .truncate(true)
                                         .create(true)
-                                        .open(user_data_tmp.clone())
+                                        .open(&user_data_tmp)
                                         .chain_err(|| format!("Unable to open {:?}", user_data_tmp))?;
 
         let json = ::serde_json::to_string(&self.data)
@@ -106,7 +106,7 @@ impl UserData {
                 .chain_err(|| format!("Unable to write user data to {:?}", user_data_tmp))?;
 
         // Move tmp file into actual user data file
-        fs::rename(user_data_tmp.clone(), user_data_json.clone())
+        fs::rename(&user_data_tmp, &user_data_json)
             .chain_err(|| format!("Unable to move {:?} to {:?}", user_data_tmp, user_data_json))?;
 
         Ok(())
