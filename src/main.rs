@@ -1,3 +1,4 @@
+extern crate app_dirs;
 extern crate clap;
 extern crate futures;
 extern crate hyper;
@@ -6,7 +7,6 @@ extern crate native_tls;
 extern crate serde_json;
 extern crate tokio_core;
 extern crate tokio_retry;
-extern crate app_dirs;
 
 #[macro_use]
 extern crate serde_derive;

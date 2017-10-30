@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use errors::*;
-use tvmaze_api::{Status, TvMazeApi, SearchResult, Show};
+use tvmaze_api::{SearchResult, Show, Status, TvMazeApi};
 use user_data::UserData;
 
 pub struct App {
@@ -19,8 +19,7 @@ impl App {
         })
     }
 
-    fn select_show(&self, search_results: &Vec<SearchResult>) -> Result<Option<Show>>
-    {
+    fn select_show(&self, search_results: &[SearchResult]) -> Result<Option<Show>> {
         // TODO: make language user preference
         for result in search_results
             .iter()
@@ -36,8 +35,7 @@ impl App {
                 }
 
                 false
-            })
-        {
+            }) {
             println!("Found:\n");
             println!("\t{}\n", result.show);
             print!("Add show? [y (yes); n (no); a (abort)] ");
@@ -49,12 +47,12 @@ impl App {
             match answer.as_str().trim() {
                 "y" => {
                     return Ok(Some(result.show.clone()));
-                },
-                "n" => {},
+                }
+                "n" => {}
                 _ => {
                     println!("Aborted.");
                     return Ok(None);
-                },
+                }
             }
         }
 
