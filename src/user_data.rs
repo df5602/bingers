@@ -126,6 +126,10 @@ impl UserData {
         self.data.version
     }
 
+    pub fn subscribed_shows(&self) -> &Vec<Show> {
+        &self.data.subscribed_shows
+    }
+
     pub fn add_show(&mut self, show: Show) {
         if !self.data.subscribed_shows.contains(&show) {
             self.data.subscribed_shows.push(show);
@@ -191,13 +195,12 @@ mod tests {
     #[test]
     fn add_new_show() {
         let mut user_data = load_dev_user_data();
-        assert!(user_data.data.subscribed_shows.is_empty());
+        assert!(user_data.subscribed_shows().is_empty());
 
         user_data.add_show(star_trek_discovery());
         assert!(
             user_data
-                .data
-                .subscribed_shows
+                .subscribed_shows()
                 .iter()
                 .find(|&show| show.id == 7480)
                 .is_some()
@@ -212,23 +215,21 @@ mod tests {
 
         assert!(
             user_data
-                .data
-                .subscribed_shows
+                .subscribed_shows()
                 .iter()
                 .find(|&show| show.id == 7480)
                 .is_some()
         );
         assert!(
             user_data
-                .data
-                .subscribed_shows
+                .subscribed_shows()
                 .iter()
                 .find(|&show| show.id == 20263)
                 .is_some()
         );
-        assert_eq!(2, user_data.data.subscribed_shows.len());
+        assert_eq!(2, user_data.subscribed_shows().len());
 
         user_data.add_show(the_orville());
-        assert_eq!(2, user_data.data.subscribed_shows.len());
+        assert_eq!(2, user_data.subscribed_shows().len());
     }
 }

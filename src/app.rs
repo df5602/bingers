@@ -86,4 +86,29 @@ impl App {
 
         Ok(())
     }
+
+    pub fn list_shows(&self) -> Result<()> {
+        // TODO: sorting order? (sort by date of most recent episode?)
+        // TODO: different formatting?
+        println!("Subscribed shows:");
+        println!();
+
+        for show in self.user_data
+            .subscribed_shows()
+            .iter()
+            .filter(|show| show.status == Status::Running)
+        {
+            println!("\t{}", show);
+        }
+
+        for show in self.user_data
+            .subscribed_shows()
+            .iter()
+            .filter(|show| show.status != Status::Running)
+        {
+            println!("\t{}", show);
+        }
+
+        Ok(())
+    }
 }

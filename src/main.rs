@@ -35,6 +35,11 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
             let show = m.value_of("tv_show").unwrap();
             app.add_show(show)?;
         }
+        ("list", Some(_m)) => {
+            // TODO: add --running flag? (list currently running shows only)
+            // TODO: no flag or --episodes flag => list episodes; --shows flag => list shows
+            app.list_shows()?;
+        }
         _ => {
             println!("{}", matches.usage());
             println!();
@@ -59,6 +64,7 @@ fn main() {
                     .value_name("SHOW"),
             ),
         )
+        .subcommand(SubCommand::with_name("list").about("List TV shows or episodes"))
         .after_help(
             "CREDITS:
     Data provided by TVmaze.com\n",
