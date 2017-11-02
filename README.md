@@ -14,6 +14,11 @@ Found:
 Add show? [y (yes); n (no); a (abort)] y
 Added "Boardwalk Empire"
 ```
+### List shows
+```
+# List all shows
+$ ./target/debug/bingers list
+```
 ### Show help
 ```
 $ ./target/debug/bingers --help
