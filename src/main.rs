@@ -40,6 +40,10 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
             // TODO: no flag or --episodes flag => list episodes; --shows flag => list shows
             app.list_shows()?;
         }
+        ("remove", Some(m)) => {
+            let show = m.value_of("tv_show").unwrap();
+            app.remove_show(show)?;
+        }
         _ => {
             println!("{}", matches.usage());
             println!();
@@ -65,6 +69,14 @@ fn main() {
             ),
         )
         .subcommand(SubCommand::with_name("list").about("List TV shows or episodes"))
+        .subcommand(
+            SubCommand::with_name("remove").about("Remove TV show").arg(
+                Arg::with_name("tv_show")
+                    .required(true)
+                    .index(1)
+                    .value_name("SHOW"),
+            ),
+        )
         .after_help(
             "CREDITS:
     Data provided by TVmaze.com\n",

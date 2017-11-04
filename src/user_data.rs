@@ -135,6 +135,17 @@ impl UserData {
             self.data.subscribed_shows.push(show);
         }
     }
+
+    pub fn remove_show(&mut self, show: &Show) {
+        let position = self.data
+            .subscribed_shows
+            .iter()
+            .position(|subscribed_show| subscribed_show == show);
+
+        if let Some(index) = position {
+            self.data.subscribed_shows.remove(index);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -201,9 +212,7 @@ mod tests {
         assert!(
             user_data
                 .subscribed_shows()
-                .iter()
-                .find(|&show| show.id == 7480)
-                .is_some()
+                .contains(&star_trek_discovery())
         );
     }
 
@@ -216,20 +225,33 @@ mod tests {
         assert!(
             user_data
                 .subscribed_shows()
-                .iter()
-                .find(|&show| show.id == 7480)
-                .is_some()
+                .contains(&star_trek_discovery())
         );
-        assert!(
-            user_data
-                .subscribed_shows()
-                .iter()
-                .find(|&show| show.id == 20263)
-                .is_some()
-        );
+        assert!(user_data.subscribed_shows().contains(&the_orville()));
         assert_eq!(2, user_data.subscribed_shows().len());
 
         user_data.add_show(the_orville());
         assert_eq!(2, user_data.subscribed_shows().len());
+    }
+
+    #[test]
+    fn remove_show() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(star_trek_discovery());
+        user_data.add_show(the_orville());
+
+        assert!(
+            user_data
+                .subscribed_shows()
+                .contains(&star_trek_discovery())
+        );
+        assert!(user_data.subscribed_shows().contains(&the_orville()));
+
+        user_data.remove_show(&star_trek_discovery());
+
+        assert!(!user_data
+            .subscribed_shows()
+            .contains(&star_trek_discovery()));
+        assert!(user_data.subscribed_shows().contains(&the_orville()));
     }
 }
