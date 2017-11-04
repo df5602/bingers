@@ -180,16 +180,14 @@ impl App {
         println!("Subscribed shows:");
         println!();
 
-        for show in self.user_data
-            .subscribed_shows()
+        for show in subscribed_shows
             .iter()
             .filter(|show| show.status == Status::Running)
         {
             println!("\t{}", show);
         }
 
-        for show in self.user_data
-            .subscribed_shows()
+        for show in subscribed_shows
             .iter()
             .filter(|show| show.status != Status::Running)
         {
