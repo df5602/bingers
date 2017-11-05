@@ -1,5 +1,7 @@
 use std::io::{self, Write};
 
+use chrono::Utc;
+
 use errors::*;
 use tvmaze_api::{Episode, SearchResult, Show, Status, TvMazeApi};
 use user_data::UserData;
@@ -160,6 +162,12 @@ impl App {
 
         let mut episodes = self.api.get_episodes(show.id)?;
 
+        // Remove episodes that haven't aired yet
+        episodes.retain(|ref episode| match episode.airstamp {
+            Some(airstamp) => Utc::now() >= airstamp,
+            None => false,
+        });
+
         if self.verbose {
             println!();
         }
@@ -188,7 +196,6 @@ impl App {
         };
 
         // Only keep episodes that haven't been watched yet
-        // TODO: also only keep episodes that have already aired
         episodes.retain(|ref episode| {
             episode.season >= season && episode.number > number
         });
