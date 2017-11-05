@@ -149,15 +149,16 @@ impl UserData {
         }
     }
 
-    pub fn remove_show(&mut self, show: &Show) {
-        let position = self.data
-            .subscribed_shows
-            .iter()
-            .position(|subscribed_show| subscribed_show == show);
+    pub fn remove_episodes(&mut self, show: &Show) {
+        self.data
+            .unwatched_episodes
+            .retain(|episode| episode.show_id != show.id);
+    }
 
-        if let Some(index) = position {
-            self.data.subscribed_shows.remove(index);
-        }
+    pub fn remove_show(&mut self, show: &Show) {
+        self.data
+            .subscribed_shows
+            .retain(|subscribed_show| subscribed_show != show);
     }
 }
 
@@ -212,6 +213,30 @@ mod tests {
             season: 1,
             number: 1,
             airstamp: Some(Utc.ymd(2017, 9, 10).and_hms(0, 0, 0)),
+            runtime: 60,
+        }
+    }
+
+    fn the_orville_ep2() -> Episode {
+        Episode {
+            episode_id: 1201556,
+            show_id: 20263,
+            name: "Command Performance".to_string(),
+            season: 1,
+            number: 2,
+            airstamp: Some(Utc.ymd(2017, 9, 17).and_hms(0, 0, 0)),
+            runtime: 60,
+        }
+    }
+
+    fn star_trek_discovery_ep1() -> Episode {
+        Episode {
+            episode_id: 892064,
+            show_id: 7480,
+            name: "The Vulcan Hello".to_string(),
+            season: 1,
+            number: 1,
+            airstamp: Some(Utc.ymd(2017, 9, 25).and_hms(0, 30, 0)),
             runtime: 60,
         }
     }
@@ -311,6 +336,48 @@ mod tests {
         assert_eq!(1, user_data.data.unwatched_episodes.len());
 
         user_data.add_episodes(vec![the_orville_ep1()]);
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+    }
+
+    #[test]
+    fn remove_episodes_of_a_given_show() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            star_trek_discovery_ep1(),
+        ]);
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep1())
+        );
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep2())
+        );
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
+        );
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+
+        user_data.remove_episodes(&the_orville());
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
+        );
         assert_eq!(1, user_data.data.unwatched_episodes.len());
     }
 }

@@ -262,11 +262,8 @@ impl App {
             println!();
         }
 
-        // TODO: maybe don't delete episode information in user data, but move to
-        //       archived section.. In case show is removed in error, one could simply
-        //       re-add it.
-
         println!("Removed \"{}\"", show_to_remove);
+        self.user_data.remove_episodes(&show_to_remove);
         self.user_data.remove_show(show_to_remove);
         self.user_data.store()?;
 
