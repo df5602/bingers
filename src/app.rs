@@ -131,12 +131,18 @@ impl App {
 
                 println!("{}", hline);
             }
+
+            let air_date = match episode.airstamp {
+                Some(airstamp) => format!("{}", airstamp.format("%a, %b %d, %Y")),
+                None => "TBD".to_string(),
+            };
+
             println!(
                 "{: >6} | {: >7} | {: <width$} | {}",
                 episode.season,
                 episode.number,
                 episode.name,
-                episode.airstamp.format("%a, %b %d, %Y"),
+                air_date,
                 width = max_length
             );
         }
@@ -182,6 +188,7 @@ impl App {
         };
 
         // Only keep episodes that haven't been watched yet
+        // TODO: also only keep episodes that have already aired
         episodes.retain(|ref episode| {
             episode.season >= season && episode.number > number
         });

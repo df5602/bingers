@@ -136,26 +136,13 @@ pub struct Episode {
     pub name: String,
     pub season: usize,
     pub number: usize,
-    pub airstamp: DateTime<Utc>,
+    pub airstamp: Option<DateTime<Utc>>,
     pub runtime: usize,
 }
 
 impl PartialEq for Episode {
     fn eq(&self, other: &Episode) -> bool {
         self.episode_id == other.episode_id && self.show_id == other.show_id
-    }
-}
-
-impl fmt::Display for Episode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "S{:02}E{:02}: {} ({})",
-            self.season,
-            self.number,
-            self.name,
-            self.airstamp.format("%a, %b %d, %Y %Z"),
-        )
     }
 }
 

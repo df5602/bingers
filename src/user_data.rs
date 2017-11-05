@@ -211,7 +211,7 @@ mod tests {
             name: "Old Wounds".to_string(),
             season: 1,
             number: 1,
-            airstamp: Utc.ymd(2017, 9, 10).and_hms(0, 0, 0),
+            airstamp: Some(Utc.ymd(2017, 9, 10).and_hms(0, 0, 0)),
             runtime: 60,
         }
     }
