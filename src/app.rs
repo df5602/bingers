@@ -152,7 +152,7 @@ impl App {
         let mut answer = String::new();
         io::stdin().read_line(&mut answer)?;
 
-        let episodes = self.api.get_episodes(show.id)?;
+        let mut episodes = self.api.get_episodes(show.id)?;
 
         if self.verbose {
             println!();
@@ -181,6 +181,11 @@ impl App {
             _ => (0, 0),
         };
 
+        // Only keep episodes that haven't been watched yet
+        episodes.retain(|ref episode| {
+            episode.season >= season && episode.number > number
+        });
+
         Ok((episodes, (season, number)))
     }
 
@@ -198,13 +203,17 @@ impl App {
 
         let selected_show = self.select_show_to_add(&search_results)?;
 
-        if let Some(show) = selected_show {
+        if let Some(mut show) = selected_show {
             println!("Added \"{}\"", show.name);
             println!();
-            let (episodes, _last_watched) = self.get_episodes(&show)?;
+            let (episodes, last_watched) = self.get_episodes(&show)?;
+
+            // Fill in information about last watched episode
+            show.last_watched_episode = last_watched;
+
+            // Add to user data
             self.user_data.add_show(show);
             self.user_data.add_episodes(episodes);
-            // TODO: handle the unwatched part...
             self.user_data.store()?;
         }
 

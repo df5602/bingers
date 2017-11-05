@@ -181,6 +181,7 @@ mod tests {
             schedule: Schedule {
                 days: vec![Day::Sunday],
             },
+            last_watched_episode: (0, 0),
         }
     }
 
@@ -199,6 +200,7 @@ mod tests {
             schedule: Schedule {
                 days: vec![Day::Thursday],
             },
+            last_watched_episode: (0, 0),
         }
     }
 

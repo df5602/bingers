@@ -72,6 +72,7 @@ pub struct Show {
     pub status: Status,
     pub runtime: Option<usize>,
     pub schedule: Schedule,
+    #[serde(default)] pub last_watched_episode: (usize, usize),
 }
 
 impl PartialEq for Show {
