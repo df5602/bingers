@@ -14,6 +14,11 @@ Found:
 Add show? [y (yes); n (no); a (abort)] y
 Added "Boardwalk Empire"
 ```
+### Unsubscribe to shows
+```
+$ ./target/debug/bingers remove "walking dead"
+Removed "The Walking Dead (Sundays on AMC, 60')"
+```
 ### List shows
 ```
 # List all shows
