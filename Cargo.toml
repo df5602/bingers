@@ -16,3 +16,4 @@ serde_derive = "*"
 clap = "*"
 error-chain = "*"
 app_dirs = "*"
+chrono = { version = "*", features = ["serde"] }

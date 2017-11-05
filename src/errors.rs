@@ -8,6 +8,7 @@ error_chain! {
         Hyper(::hyper::Error);
         SerdeJson(::serde_json::error::Error);
         AppDirs(::app_dirs::AppDirsError);
+        ParseIntError(::std::num::ParseIntError);
     }
 
     errors {

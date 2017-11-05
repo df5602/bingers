@@ -4,8 +4,11 @@ use std::io::{self, Read, Write};
 
 use app_dirs::{get_data_root, AppDataType};
 
+#[allow(unused_imports)]
+use chrono::{TimeZone, Utc};
+
 use errors::*;
-use tvmaze_api::Show;
+use tvmaze_api::{Episode, Show};
 
 const VERSION: u32 = 1;
 
@@ -18,6 +21,7 @@ struct DetectVersion {
 struct UserDataV1 {
     version: u32,
     subscribed_shows: Vec<Show>,
+    unwatched_episodes: Vec<Episode>,
 }
 
 #[derive(Debug)]
@@ -33,6 +37,7 @@ impl UserData {
             data: UserDataV1 {
                 version: 1,
                 subscribed_shows: Vec::new(),
+                unwatched_episodes: Vec::new(),
             },
         }
     }
@@ -136,6 +141,14 @@ impl UserData {
         }
     }
 
+    pub fn add_episodes(&mut self, episodes: Vec<Episode>) {
+        for episode in episodes {
+            if !self.data.unwatched_episodes.contains(&episode) {
+                self.data.unwatched_episodes.push(episode);
+            }
+        }
+    }
+
     pub fn remove_show(&mut self, show: &Show) {
         let position = self.data
             .subscribed_shows
@@ -186,6 +199,18 @@ mod tests {
             schedule: Schedule {
                 days: vec![Day::Thursday],
             },
+        }
+    }
+
+    fn the_orville_ep1() -> Episode {
+        Episode {
+            episode_id: 1172410,
+            show_id: 20263,
+            name: "Old Wounds".to_string(),
+            season: 1,
+            number: 1,
+            airstamp: Utc.ymd(2017, 9, 10).and_hms(0, 0, 0),
+            runtime: 60,
         }
     }
 
@@ -253,5 +278,37 @@ mod tests {
             .subscribed_shows()
             .contains(&star_trek_discovery()));
         assert!(user_data.subscribed_shows().contains(&the_orville()));
+    }
+
+    #[test]
+    fn add_episode() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_episodes(vec![the_orville_ep1()]);
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep1())
+        );
+    }
+
+    #[test]
+    fn do_not_add_episode_twice() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_episodes(vec![the_orville_ep1()]);
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep1())
+        );
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+
+        user_data.add_episodes(vec![the_orville_ep1()]);
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
     }
 }

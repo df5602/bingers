@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 use errors::*;
-use tvmaze_api::{SearchResult, Show, Status, TvMazeApi};
+use tvmaze_api::{Episode, SearchResult, Show, Status, TvMazeApi};
 use user_data::UserData;
 
 pub struct App {
@@ -104,6 +104,86 @@ impl App {
         matched_shows
     }
 
+    fn print_episode_list_as_table(&self, episodes: &[Episode]) {
+        // Calculate maximum length of episode name
+        let max_length = episodes
+            .iter()
+            .map(|episode| episode.name.len())
+            .fold(0, |max, length| if length > max { length } else { max });
+
+        println!(
+            "Season | Episode | {: <width$} | Air Date",
+            "Name",
+            width = max_length
+        );
+
+        let hline = format!(
+            "-------|---------|-{:-<width$}-|-------------------",
+            "-",
+            width = max_length
+        );
+        println!("{}", hline);
+
+        let mut current_season = 1;
+        for episode in episodes {
+            if episode.season > current_season {
+                current_season = episode.season;
+
+                println!("{}", hline);
+            }
+            println!(
+                "{: >6} | {: >7} | {: <width$} | {}",
+                episode.season,
+                episode.number,
+                episode.name,
+                episode.airstamp.format("%a, %b %d, %Y"),
+                width = max_length
+            );
+        }
+    }
+
+    fn get_episodes(&mut self, show: &Show) -> Result<(Vec<Episode>, (usize, usize))> {
+        print!(
+            "Have you already watched some episodes of {}? [y (yes); n (no)] ",
+            show.name
+        );
+        let _ = io::stdout().flush();
+
+        let mut answer = String::new();
+        io::stdin().read_line(&mut answer)?;
+
+        let episodes = self.api.get_episodes(show.id)?;
+
+        if self.verbose {
+            println!();
+        }
+
+        let (season, number) = match answer.as_str().trim() {
+            "y" | "yes" => {
+                self.print_episode_list_as_table(&episodes);
+                println!();
+                println!("Specify the last episode you have watched:");
+
+                print!("Season: ");
+                let _ = io::stdout().flush();
+                answer.clear();
+                io::stdin().read_line(&mut answer)?;
+                let season: usize = answer.trim().parse()?;
+
+                print!("Episode: ");
+                let _ = io::stdout().flush();
+                answer.clear();
+                io::stdin().read_line(&mut answer)?;
+                let episode: usize = answer.trim().parse()?;
+
+                (season, episode)
+            }
+            _ => (0, 0),
+        };
+
+        Ok((episodes, (season, number)))
+    }
+
     /// Add show to list of subscribed shows.
     ///
     /// Calls web API to search for shows with the given name.
@@ -120,7 +200,11 @@ impl App {
 
         if let Some(show) = selected_show {
             println!("Added \"{}\"", show.name);
+            println!();
+            let (episodes, _last_watched) = self.get_episodes(&show)?;
             self.user_data.add_show(show);
+            self.user_data.add_episodes(episodes);
+            // TODO: handle the unwatched part...
             self.user_data.store()?;
         }
 

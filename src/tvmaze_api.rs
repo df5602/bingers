@@ -11,6 +11,8 @@ use tokio_core::reactor::Core;
 use tokio_retry::RetryIf;
 use tokio_retry::strategy::FibonacciBackoff;
 
+use chrono::{DateTime, Utc};
+
 use errors::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -126,6 +128,36 @@ pub struct SearchResult {
     pub show: Show,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Episode {
+    #[serde(rename = "id")] pub episode_id: usize,
+    #[serde(default)] pub show_id: usize,
+    pub name: String,
+    pub season: usize,
+    pub number: usize,
+    pub airstamp: DateTime<Utc>,
+    pub runtime: usize,
+}
+
+impl PartialEq for Episode {
+    fn eq(&self, other: &Episode) -> bool {
+        self.episode_id == other.episode_id && self.show_id == other.show_id
+    }
+}
+
+impl fmt::Display for Episode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "S{:02}E{:02}: {} ({})",
+            self.season,
+            self.number,
+            self.name,
+            self.airstamp.format("%a, %b %d, %Y %Z"),
+        )
+    }
+}
+
 pub struct TvMazeApi {
     core: RefCell<Core>,
     client: Client<HttpsConnector<HttpConnector>>,
@@ -221,6 +253,38 @@ impl TvMazeApi {
         self.core
             .borrow_mut()
             .run(search_results)
+            .chain_err(|| "HTTP request failed")
+    }
+
+    pub fn get_episodes(&mut self, id: usize) -> Result<Vec<Episode>> {
+        // Construct URI
+        let uri = &format!("https://api.tvmaze.com/shows/{}/episodes", id);
+        let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
+
+        // Send request and get response
+        let response = self.make_get_request(uri);
+
+        // Deserialize response into a Vec<Episode>
+        let episodes = response.and_then(|body| {
+            let episodes: Result<Vec<Episode>> =
+                ::serde_json::from_slice(&body).chain_err(|| "Unable to deserialize HTTP response");
+
+            let mut episodes = match episodes {
+                Ok(episodes) => episodes,
+                Err(e) => return Err(e),
+            };
+
+            for episode in episodes.iter_mut() {
+                episode.show_id = id;
+            }
+
+            Ok(episodes)
+        });
+
+        // Run future
+        self.core
+            .borrow_mut()
+            .run(episodes)
             .chain_err(|| "HTTP request failed")
     }
 }

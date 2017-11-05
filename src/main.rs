@@ -1,4 +1,5 @@
 extern crate app_dirs;
+extern crate chrono;
 extern crate clap;
 extern crate futures;
 extern crate hyper;
