@@ -262,7 +262,7 @@ impl TvMazeApi {
                 Err(e) => return Err(e),
             };
 
-            for episode in episodes.iter_mut() {
+            for episode in &mut episodes {
                 episode.show_id = id;
             }
 

@@ -163,7 +163,7 @@ impl App {
         let mut episodes = self.api.get_episodes(show.id)?;
 
         // Remove episodes that haven't aired yet
-        episodes.retain(|ref episode| match episode.airstamp {
+        episodes.retain(|episode| match episode.airstamp {
             Some(airstamp) => Utc::now() >= airstamp,
             None => false,
         });
@@ -196,7 +196,7 @@ impl App {
         };
 
         // Only keep episodes that haven't been watched yet
-        episodes.retain(|ref episode| {
+        episodes.retain(|episode| {
             episode.season >= season && episode.number > number
         });
 
@@ -263,7 +263,7 @@ impl App {
         }
 
         println!("Removed \"{}\"", show_to_remove);
-        self.user_data.remove_episodes(&show_to_remove);
+        self.user_data.remove_episodes(show_to_remove);
         self.user_data.remove_show(show_to_remove);
         self.user_data.store()?;
 
