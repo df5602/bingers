@@ -4,9 +4,6 @@ use std::io::{self, Read, Write};
 
 use app_dirs::{get_data_root, AppDataType};
 
-#[allow(unused_imports)]
-use chrono::{TimeZone, Utc};
-
 use errors::*;
 use tvmaze_api::{Episode, Show};
 
@@ -164,6 +161,8 @@ impl UserData {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{TimeZone, Utc};
+
     use super::*;
     use tvmaze_api::{Day, Network, Schedule, Status};
 
