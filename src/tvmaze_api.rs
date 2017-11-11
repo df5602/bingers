@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::fmt;
 use std::cell::RefCell;
+use std::cmp::Ordering;
 
 use hyper::{self, Client, StatusCode, Uri};
 use hyper::client::HttpConnector;
@@ -75,11 +76,25 @@ pub struct Show {
     #[serde(default)] pub last_watched_episode: (usize, usize),
 }
 
+impl Ord for Show {
+    fn cmp(&self, other: &Show) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd for Show {
+    fn partial_cmp(&self, other: &Show) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl PartialEq for Show {
     fn eq(&self, other: &Show) -> bool {
         self.id == other.id
     }
 }
+
+impl Eq for Show {}
 
 impl fmt::Display for Show {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -140,11 +155,33 @@ pub struct Episode {
     pub runtime: usize,
 }
 
+impl Ord for Episode {
+    fn cmp(&self, other: &Episode) -> Ordering {
+        if self.show_id == other.show_id {
+            if self.season == other.season {
+                self.number.cmp(&other.number)
+            } else {
+                self.season.cmp(&other.season)
+            }
+        } else {
+            self.show_id.cmp(&other.show_id)
+        }
+    }
+}
+
+impl PartialOrd for Episode {
+    fn partial_cmp(&self, other: &Episode) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl PartialEq for Episode {
     fn eq(&self, other: &Episode) -> bool {
         self.episode_id == other.episode_id && self.show_id == other.show_id
     }
 }
+
+impl Eq for Episode {}
 
 pub struct TvMazeApi {
     core: RefCell<Core>,

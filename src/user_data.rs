@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
+use std::cmp::Ordering;
 
 use app_dirs::{get_data_root, AppDataType};
 
 use errors::*;
-use tvmaze_api::{Episode, Show};
+use tvmaze_api::{Episode, Show, Status};
 
 const VERSION: u32 = 1;
 
@@ -132,17 +133,40 @@ impl UserData {
         &self.data.subscribed_shows
     }
 
+    #[allow(unknown_lints)]
+    #[allow(match_same_arms)] // Clippy issue #860
+    pub fn subscribed_shows_by_most_recent(&mut self) -> &Vec<Show> {
+        // TODO: sort by date of most recent episode
+        self.data
+            .subscribed_shows
+            .sort_by(|a, b| match (&a.status, &b.status) {
+                (&Status::Running, &Status::Running) => a.cmp(b),
+                (&Status::Running, _) => Ordering::Less,
+                (_, &Status::Running) => Ordering::Greater,
+                (_, _) => a.cmp(b),
+            });
+        &self.data.subscribed_shows
+    }
+
     pub fn add_show(&mut self, show: Show) {
         if !self.data.subscribed_shows.contains(&show) {
             self.data.subscribed_shows.push(show);
+
+            self.data.subscribed_shows.sort();
         }
     }
 
     pub fn add_episodes(&mut self, episodes: Vec<Episode>) {
+        let mut episode_added = false;
         for episode in episodes {
             if !self.data.unwatched_episodes.contains(&episode) {
                 self.data.unwatched_episodes.push(episode);
+                episode_added = true;
             }
+        }
+
+        if episode_added {
+            self.data.unwatched_episodes.sort();
         }
     }
 
