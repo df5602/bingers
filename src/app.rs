@@ -1,4 +1,6 @@
 use std::io::{self, Write};
+use std::collections::HashMap;
+use std::cmp::max;
 
 use chrono::Utc;
 
@@ -106,7 +108,7 @@ impl App {
         matched_shows
     }
 
-    fn print_episode_list_as_table(&self, episodes: &[Episode]) {
+    fn print_episode_list_as_table(episodes: &[Episode]) {
         // Calculate maximum length of episode name
         let max_length = episodes
             .iter()
@@ -150,6 +152,65 @@ impl App {
         }
     }
 
+    fn print_show_list_as_table(shows: &[&Show], unwatched_episode_count: &HashMap<usize, usize>) {
+        // Calculate maximum length of show and network name
+        let (max_length_name, max_length_network) = shows
+            .iter()
+            .map(|show| (show.name.len(), show.network_name().len()))
+            .fold(
+                (0, 0),
+                |(max_length_name, max_length_network), (length_name, length_network)| {
+                    (
+                        max(max_length_name, length_name),
+                        max(max_length_network, length_network),
+                    )
+                },
+            );
+
+        // Print header
+        println!(
+            "{: <width_show_name$} | {: <width_network_name$} | {: <14} |",
+            "Name",
+            "Network",
+            "Status",
+            width_show_name = max_length_name,
+            width_network_name = max_length_network,
+        );
+        println!(
+            "{:-<width_show_name$}-|-{:-<width_network_name$}-|-{:-<14}-|------------------------",
+            "-",
+            "-",
+            "-",
+            width_show_name = max_length_name,
+            width_network_name = max_length_network,
+        );
+
+        // Print shows
+        for show in shows {
+            let status = &format!("{}", show.status);
+
+            let unwatched = match unwatched_episode_count.get(&show.id) {
+                Some(count) => if *count > 1 {
+                    format!("{} unwatched episodes", count)
+                } else {
+                    assert_eq!(1, *count);
+                    "1 unwatched episode".to_string()
+                },
+                None => "".to_string(),
+            };
+
+            println!(
+                "{: <width_show_name$} | {: <width_network_name$} | {: <14} | {}",
+                show.name,
+                show.network_name(),
+                status,
+                unwatched,
+                width_show_name = max_length_name,
+                width_network_name = max_length_network,
+            );
+        }
+    }
+
     fn get_episodes(&mut self, show: &Show) -> Result<(Vec<Episode>, (usize, usize))> {
         print!(
             "Have you already watched some episodes of {}? [y (yes); n (no)] ",
@@ -174,7 +235,7 @@ impl App {
 
         let (season, number) = match answer.as_str().trim() {
             "y" | "yes" => {
-                self.print_episode_list_as_table(&episodes);
+                App::print_episode_list_as_table(&episodes);
                 println!();
                 println!("Specify the last episode you have watched:");
 
@@ -221,6 +282,9 @@ impl App {
             println!("Added \"{}\"", show.name);
             println!();
             let (episodes, last_watched) = self.get_episodes(&show)?;
+
+            // BUG: When selecting last episode of previous season as last watched, no shows
+            //      get added?
 
             // Fill in information about last watched episode
             show.last_watched_episode = last_watched;
@@ -279,13 +343,18 @@ impl App {
             return Ok(());
         }
 
-        // TODO: different formatting?
+        let mut unwatched_episode_count: HashMap<usize, usize> = HashMap::new();
+
+        let unwatched_episodes = self.user_data.unwatched_episodes();
+        for episode in unwatched_episodes {
+            *unwatched_episode_count.entry(episode.show_id).or_insert(0) += 1;
+        }
+
         println!("Subscribed shows:");
         println!();
 
-        for show in subscribed_shows {
-            println!("\t{}", show);
-        }
+        App::print_show_list_as_table(&subscribed_shows, &unwatched_episode_count);
+        println!();
 
         Ok(())
     }

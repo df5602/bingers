@@ -135,17 +135,26 @@ impl UserData {
 
     #[allow(unknown_lints)]
     #[allow(match_same_arms)] // Clippy issue #860
-    pub fn subscribed_shows_by_most_recent(&mut self) -> &Vec<Show> {
+    pub fn subscribed_shows_by_most_recent(&self) -> Vec<&Show> {
+        let mut subscribed_shows = Vec::new();
+
+        for show in &self.data.subscribed_shows {
+            subscribed_shows.push(show);
+        }
+
         // TODO: sort by date of most recent episode
-        self.data
-            .subscribed_shows
-            .sort_by(|a, b| match (&a.status, &b.status) {
-                (&Status::Running, &Status::Running) => a.cmp(b),
-                (&Status::Running, _) => Ordering::Less,
-                (_, &Status::Running) => Ordering::Greater,
-                (_, _) => a.cmp(b),
-            });
-        &self.data.subscribed_shows
+        subscribed_shows.sort_by(|a, b| match (&a.status, &b.status) {
+            (&Status::Running, &Status::Running) => a.cmp(b),
+            (&Status::Running, _) => Ordering::Less,
+            (_, &Status::Running) => Ordering::Greater,
+            (_, _) => a.cmp(b),
+        });
+
+        subscribed_shows
+    }
+
+    pub fn unwatched_episodes(&self) -> &Vec<Episode> {
+        &self.data.unwatched_episodes
     }
 
     pub fn add_show(&mut self, show: Show) {

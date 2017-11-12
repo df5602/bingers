@@ -108,14 +108,6 @@ impl fmt::Display for Show {
             "".to_string()
         };
 
-        let network_name = match self.network {
-            Some(ref network) => network.name.clone(),
-            None => match self.web_channel {
-                Some(ref channel) => channel.name.clone(),
-                None => "Unknown".to_string(),
-            },
-        };
-
         let status = match self.status {
             Status::Ended | Status::ToBeDetermined => format!(" ({})", self.status),
             _ => "".to_string(),
@@ -131,10 +123,22 @@ impl fmt::Display for Show {
             "{} ({}{}{}, {}')",
             self.name,
             scheduled_days,
-            network_name,
+            self.network_name(),
             status,
             runtime
         )
+    }
+}
+
+impl Show {
+    pub fn network_name(&self) -> &str {
+        match self.network {
+            Some(ref network) => &network.name,
+            None => match self.web_channel {
+                Some(ref channel) => &channel.name,
+                None => "Unknown",
+            },
+        }
     }
 }
 
