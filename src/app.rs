@@ -257,8 +257,10 @@ impl App {
         };
 
         // Only keep episodes that haven't been watched yet
-        episodes.retain(|episode| {
-            episode.season >= season && episode.number > number
+        episodes.retain(|episode| if episode.season == season {
+            episode.number > number
+        } else {
+            episode.season > season
         });
 
         Ok((episodes, (season, number)))
@@ -282,9 +284,6 @@ impl App {
             println!("Added \"{}\"", show.name);
             println!();
             let (episodes, last_watched) = self.get_episodes(&show)?;
-
-            // BUG: When selecting last episode of previous season as last watched, no shows
-            //      get added?
 
             // Fill in information about last watched episode
             show.last_watched_episode = last_watched;
