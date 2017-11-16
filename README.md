@@ -38,8 +38,11 @@ Removed "The Walking Dead (Sundays on AMC, 60')"
 ```
 ### List shows
 ```
-# List all shows
+# List all unwatched episodes
 $ ./target/debug/bingers list
+
+# List all shows
+$ ./target/debug/bingers list --shows
 ```
 ### Show help
 ```
