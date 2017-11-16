@@ -36,11 +36,11 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
             let show = m.value_of("tv_show").unwrap();
             app.add_show(show)?;
         }
-        ("list", Some(_m)) => {
-            // TODO: add --running flag? (list currently running shows only)
-            // TODO: no flag or --episodes flag => list episodes; --shows flag => list shows
+        ("list", Some(m)) => if m.is_present("shows") {
             app.list_shows()?;
-        }
+        } else {
+            app.list_episodes()?;
+        },
         ("remove", Some(m)) => {
             let show = m.value_of("tv_show").unwrap();
             app.remove_show(show)?;
@@ -69,7 +69,25 @@ fn main() {
                     .value_name("SHOW"),
             ),
         )
-        .subcommand(SubCommand::with_name("list").about("List TV shows or episodes"))
+        .subcommand(
+            SubCommand::with_name("list")
+                .about(
+                    "List TV shows or episodes\n
+When no flag is given, episodes will be listed.",
+                )
+                .arg(
+                    Arg::with_name("shows")
+                        .short("s")
+                        .long("shows")
+                        .help("List shows"),
+                )
+                .arg(
+                    Arg::with_name("episodes")
+                        .short("e")
+                        .long("episodes")
+                        .help("List episodes (default)"),
+                ),
+        )
         .subcommand(
             SubCommand::with_name("remove").about("Remove TV show").arg(
                 Arg::with_name("tv_show")

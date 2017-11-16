@@ -2,11 +2,17 @@ use std::io::{self, Write};
 use std::collections::HashMap;
 use std::cmp::max;
 
-use chrono::Utc;
+use chrono::{Datelike, Utc};
 
 use errors::*;
 use tvmaze_api::{Episode, SearchResult, Show, Status, TvMazeApi};
 use user_data::UserData;
+
+#[derive(PartialEq)]
+enum HorizontalSeparator {
+    Season,
+    Week,
+}
 
 pub struct App {
     api: TvMazeApi,
@@ -108,37 +114,90 @@ impl App {
         matched_shows
     }
 
-    fn print_episode_list_as_table(episodes: &[Episode]) {
+    fn print_episode_list_as_table<T: AsRef<Episode>>(
+        episodes: &[T],
+        separator: &HorizontalSeparator,
+        show_names: Option<&HashMap<usize, &str>>,
+    ) {
         // Calculate maximum length of episode name
-        let max_length = episodes
+        let max_ep_length = episodes
             .iter()
-            .map(|episode| episode.name.len())
-            .fold(0, |max, length| if length > max { length } else { max });
+            .map(|episode| episode.as_ref().name.len())
+            .fold(0, max);
 
+        // If applicable, calculate maximum length of show name
+        let max_show_length = if let Some(show_names) = show_names {
+            episodes
+                .iter()
+                .map(|episode| {
+                    if let Some(name) = show_names.get(&episode.as_ref().show_id) {
+                        name.len()
+                    } else {
+                        0
+                    }
+                })
+                .fold(0, max)
+        } else {
+            0
+        };
+
+        if max_show_length > 0 {
+            print!("{: <width$} |", "Show", width = max_show_length);
+        }
         println!(
             "Season | Episode | {: <width$} | Air Date",
             "Name",
-            width = max_length
+            width = max_ep_length
         );
 
-        let hline = format!(
+        let mut hline = if max_show_length > 0 {
+            format!("{:-<width$}-|", "-", width = max_show_length)
+        } else {
+            "".to_string()
+        };
+
+        hline.push_str(&format!(
             "-------|---------|-{:-<width$}-|-------------------",
             "-",
-            width = max_length
-        );
+            width = max_ep_length
+        ));
+
         println!("{}", hline);
 
         let mut current_season = 1;
-        for episode in episodes {
-            if episode.season > current_season {
-                current_season = episode.season;
+        let mut current_week: u32 = 0;
+        for (i, episode) in episodes.iter().enumerate() {
+            let episode = episode.as_ref();
 
+            let this_week = if let Some(airdate) = episode.airstamp {
+                airdate.iso_week().week()
+            } else {
+                0
+            };
+
+            if i > 0
+                && ((separator == &HorizontalSeparator::Season && episode.season != current_season)
+                    || (separator == &HorizontalSeparator::Week && this_week != current_week))
+            {
                 println!("{}", hline);
             }
+            current_season = episode.season;
+            current_week = this_week;
+
 
             let air_date = match episode.airstamp {
                 Some(airstamp) => format!("{}", airstamp.format("%a, %b %d, %Y")),
                 None => "TBD".to_string(),
+            };
+
+            if let Some(show_names) = show_names {
+                let name = if let Some(name) = show_names.get(&episode.show_id) {
+                    name
+                } else {
+                    "???"
+                };
+
+                print!("{: <width$} |", name, width = max_show_length);
             };
 
             println!(
@@ -147,7 +206,7 @@ impl App {
                 episode.number,
                 episode.name,
                 air_date,
-                width = max_length
+                width = max_ep_length
             );
         }
     }
@@ -235,7 +294,7 @@ impl App {
 
         let (season, number) = match answer.as_str().trim() {
             "y" | "yes" => {
-                App::print_episode_list_as_table(&episodes);
+                App::print_episode_list_as_table(&episodes, &HorizontalSeparator::Season, None);
                 println!();
                 println!("Specify the last episode you have watched:");
 
@@ -334,7 +393,7 @@ impl App {
     }
 
     /// List all followed shows
-    pub fn list_shows(&mut self) -> Result<()> {
+    pub fn list_shows(&self) -> Result<()> {
         let subscribed_shows = self.user_data.subscribed_shows_by_most_recent();
 
         if subscribed_shows.is_empty() {
@@ -353,6 +412,31 @@ impl App {
         println!();
 
         App::print_show_list_as_table(&subscribed_shows, &unwatched_episode_count);
+        println!();
+
+        Ok(())
+    }
+
+    /// List all unwatched episodes
+    pub fn list_episodes(&self) -> Result<()> {
+        let episodes = self.user_data.unwatched_episodes_oldest_first();
+
+        if episodes.is_empty() {
+            println!("You have no unwatched episodes!");
+            return Ok(());
+        }
+
+        let mut show_names: HashMap<usize, &str> = HashMap::new();
+
+        let shows = self.user_data.subscribed_shows();
+        for show in shows {
+            show_names.insert(show.id, &show.name);
+        }
+
+        println!("Unwatched episodes:");
+        println!();
+
+        App::print_episode_list_as_table(&episodes, &HorizontalSeparator::Week, Some(&show_names));
         println!();
 
         Ok(())

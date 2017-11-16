@@ -187,6 +187,12 @@ impl PartialEq for Episode {
 
 impl Eq for Episode {}
 
+impl AsRef<Episode> for Episode {
+    fn as_ref(&self) -> &Episode {
+        self
+    }
+}
+
 pub struct TvMazeApi {
     core: RefCell<Core>,
     client: Client<HttpsConnector<HttpConnector>>,

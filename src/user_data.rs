@@ -157,6 +157,23 @@ impl UserData {
         &self.data.unwatched_episodes
     }
 
+    pub fn unwatched_episodes_oldest_first(&self) -> Vec<&Episode> {
+        let mut unwatched_episodes = Vec::new();
+
+        for episode in &self.data.unwatched_episodes {
+            unwatched_episodes.push(episode);
+        }
+
+        unwatched_episodes.sort_by(|a, b| match (a.airstamp, b.airstamp) {
+            (Some(date_a), Some(date_b)) => date_a.cmp(&date_b),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => b.cmp(a),
+        });
+
+        unwatched_episodes
+    }
+
     pub fn add_show(&mut self, show: Show) {
         if !self.data.subscribed_shows.contains(&show) {
             self.data.subscribed_shows.push(show);
