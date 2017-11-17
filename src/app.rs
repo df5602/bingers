@@ -368,13 +368,17 @@ impl App {
         let matched_shows = self.match_with_subscribed_shows(&search_results);
 
         if matched_shows.is_empty() {
+            println!("No matching show found.");
             return Ok(());
         }
 
         let show_to_remove = if matched_shows.len() > 1 {
             match self.select_show_to_remove(&matched_shows)? {
                 Some(show) => show,
-                None => return Ok(()),
+                None => {
+                    println!("No matching show found.");
+                    return Ok(());
+                }
             }
         } else {
             matched_shows[0]
