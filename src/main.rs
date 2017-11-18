@@ -85,6 +85,7 @@ When no flag is given, episodes will be listed.",
                     Arg::with_name("episodes")
                         .short("e")
                         .long("episodes")
+                        .conflicts_with("shows")
                         .help("List episodes (default)"),
                 ),
         )
