@@ -74,11 +74,11 @@ impl App {
         Ok(None)
     }
 
-    fn select_show_to_remove<'a>(&self, candidates: &'a [&Show]) -> Result<Option<&'a Show>> {
+    fn select_show<'a>(&self, candidates: &'a [&Show]) -> Result<Option<&'a Show>> {
         for candidate in candidates {
             println!("Found:\n");
             println!("\t{}\n", candidate);
-            print!("Remove show? [y (yes); n (no); a (abort)] ");
+            print!("Did you mean this show? [y (yes); n (no); a (abort)] ");
             let _ = io::stdout().flush();
 
             let mut answer = String::new();
@@ -114,6 +114,37 @@ impl App {
         matched_shows
     }
 
+    // TODO: refactor such that this actually works with the borrow checker
+    //
+    // fn resolve_show(&mut self, show: &str) -> Result<Option<Show>> {
+    //     let search_results = self.api
+    //         .search_shows(show)
+    //         .chain_err(|| format!("Unable to search for show [\"{}\"]", show))?;
+
+    //     let selected_show = {
+    //         let matched_shows = self.match_with_subscribed_shows(&search_results);
+
+    //         if matched_shows.is_empty() {
+    //             println!("No matching show found.");
+    //             return Ok(None);
+    //         }
+
+    //         if matched_shows.len() > 1 {
+    //             match self.select_show(&matched_shows)? {
+    //                 Some(show) => show,
+    //                 None => {
+    //                     println!("No matching show found.");
+    //                     return Ok(None);
+    //                 }
+    //             }
+    //         } else {
+    //             matched_shows[0]
+    //         }
+    //     };
+
+    //     Ok(Some(*selected_show))
+    // }
+
     fn print_episode_list_as_table<T: AsRef<Episode>>(
         episodes: &[T],
         separator: &HorizontalSeparator,
@@ -122,6 +153,7 @@ impl App {
         // Calculate maximum length of episode name
         let max_ep_length = episodes
             .iter()
+            .filter(|episode| !episode.as_ref().watched)
             .map(|episode| episode.as_ref().name.len())
             .fold(0, max);
 
@@ -129,6 +161,7 @@ impl App {
         let max_show_length = if let Some(show_names) = show_names {
             episodes
                 .iter()
+                .filter(|episode| !episode.as_ref().watched)
                 .map(|episode| {
                     if let Some(name) = show_names.get(&episode.as_ref().show_id) {
                         name.len()
@@ -166,7 +199,11 @@ impl App {
 
         let mut current_season = 1;
         let mut current_week: u32 = 0;
-        for (i, episode) in episodes.iter().enumerate() {
+        for (i, episode) in episodes
+            .iter()
+            .filter(|episode| !episode.as_ref().watched)
+            .enumerate()
+        {
             let episode = episode.as_ref();
 
             let this_week = if let Some(airdate) = episode.airstamp {
@@ -340,7 +377,7 @@ impl App {
         let selected_show = self.select_show_to_add(&search_results)?;
 
         if let Some(mut show) = selected_show {
-            println!("Added \"{}\"", show.name);
+            println!("Added \"{}\".", show.name);
             println!();
             let (episodes, last_watched) = self.get_episodes(&show)?;
 
@@ -373,7 +410,7 @@ impl App {
         }
 
         let show_to_remove = if matched_shows.len() > 1 {
-            match self.select_show_to_remove(&matched_shows)? {
+            match self.select_show(&matched_shows)? {
                 Some(show) => show,
                 None => {
                     println!("No matching show found.");
@@ -388,7 +425,7 @@ impl App {
             println!();
         }
 
-        println!("Removed \"{}\"", show_to_remove);
+        println!("Removed \"{}\".", show_to_remove);
         self.user_data.remove_episodes(show_to_remove);
         self.user_data.remove_show(show_to_remove);
         self.user_data.store()?;
@@ -408,7 +445,7 @@ impl App {
         let mut unwatched_episode_count: HashMap<usize, usize> = HashMap::new();
 
         let unwatched_episodes = self.user_data.unwatched_episodes();
-        for episode in unwatched_episodes {
+        for episode in unwatched_episodes.iter().filter(|episode| !episode.watched) {
             *unwatched_episode_count.entry(episode.show_id).or_insert(0) += 1;
         }
 
@@ -442,6 +479,74 @@ impl App {
 
         App::print_episode_list_as_table(&episodes, &HorizontalSeparator::Week, Some(&show_names));
         println!();
+
+        Ok(())
+    }
+
+    /// Mark episode(s) as watched
+    pub fn mark_as_watched(
+        &mut self,
+        show: &str,
+        season: Option<usize>,
+        episode: Option<usize>,
+    ) -> Result<()> {
+        let search_results = self.api
+            .search_shows(show)
+            .chain_err(|| format!("Unable to search for show [\"{}\"]", show))?;
+
+        let matched_shows = self.match_with_subscribed_shows(&search_results);
+
+        if matched_shows.is_empty() {
+            println!("No matching show found.");
+            return Ok(());
+        }
+
+        let show_to_update = if matched_shows.len() > 1 {
+            match self.select_show(&matched_shows)? {
+                Some(show) => show,
+                None => {
+                    println!("No matching show found.");
+                    return Ok(());
+                }
+            }
+        } else {
+            matched_shows[0]
+        };
+
+        if self.verbose {
+            println!();
+        }
+
+        let last_marked = self.user_data
+            .mark_as_watched(show_to_update.id, season, episode);
+
+        if let Some(last_marked) = last_marked {
+            if let Some(season) = season {
+                if let Some(episode) = episode {
+                    println!(
+                        "Marked season {} episode {} of {} as watched.",
+                        season,
+                        episode,
+                        show_to_update.name
+                    );
+                } else {
+                    println!(
+                        "Marked season {} of {} as watched.",
+                        season,
+                        show_to_update.name
+                    );
+                }
+            } else {
+                println!(
+                    "Marked season {} episode {} of {} as watched.",
+                    last_marked.0,
+                    last_marked.1,
+                    show_to_update.name
+                );
+            }
+
+            self.user_data.store()?;
+        }
 
         Ok(())
     }

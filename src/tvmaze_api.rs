@@ -157,6 +157,7 @@ pub struct Episode {
     pub number: usize,
     pub airstamp: Option<DateTime<Utc>>,
     pub runtime: usize,
+    #[serde(default)] pub watched: bool,
 }
 
 impl Ord for Episode {

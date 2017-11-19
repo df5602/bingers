@@ -207,6 +207,126 @@ impl UserData {
             .subscribed_shows
             .retain(|subscribed_show| subscribed_show != show);
     }
+
+    /// Mark episode of given show as watched.
+    ///
+    /// If neither season nor episode are specified, will mark the next unwatched episode
+    /// as watched. In this case the episode number will be returned.
+    ///
+    /// If only season is specified, will mark the whole season as watched.
+    ///
+    /// If both season and episode are specified, will mark the exact episode as watched.
+    pub fn mark_as_watched(
+        &mut self,
+        show_id: usize,
+        season: Option<usize>,
+        episode: Option<usize>,
+    ) -> Option<(usize, usize)> {
+        let last_marked = match (season, episode) {
+            (Some(season), None) => self.mark_season_as_watched(show_id, season),
+            (Some(season), Some(episode)) => self.mark_episode_as_watched(show_id, season, episode),
+            (None, None) => self.mark_next_episode_as_watched(show_id),
+            (None, Some(_)) => None,
+        };
+
+        if let Some(last_marked) = last_marked {
+            let mut gap = false;
+            let mut last_watched = (0, 0);
+            let mut show_index = None;
+
+            for (i, show) in self.data
+                .subscribed_shows
+                .iter()
+                .enumerate()
+                .filter(|&(_, show)| show.id == show_id)
+            {
+                last_watched = show.last_watched_episode;
+                show_index = Some(i);
+            }
+
+            // TODO: better way to compare episodes and tuples
+            for _ in self.data
+                .unwatched_episodes
+                .iter()
+                .filter(|episode| episode.show_id == show_id && !episode.watched)
+                .filter(|episode| if episode.season == last_watched.0 {
+                    episode.number > last_watched.1
+                } else {
+                    episode.season > last_watched.0
+                })
+                .filter(|episode| if episode.season == last_marked.0 {
+                    episode.number < last_marked.1
+                } else {
+                    episode.season < last_marked.0
+                }) {
+                gap = true;
+            }
+
+            // TODO: handle more complicated case where there was a gap
+            // from a previous "mark as watched" command
+            if !gap {
+                self.data
+                    .unwatched_episodes
+                    .retain(|episode| episode.show_id != show_id || !episode.watched);
+
+                if let Some(index) = show_index {
+                    self.data.subscribed_shows[index].last_watched_episode = last_marked;
+                }
+            }
+        }
+
+        last_marked
+    }
+
+    #[allow(unknown_lints)]
+    #[allow(never_loop)]
+    fn mark_next_episode_as_watched(&mut self, show_id: usize) -> Option<(usize, usize)> {
+        let mut marked = None;
+
+        for episode in self.data
+            .unwatched_episodes
+            .iter_mut()
+            .filter(|episode| episode.show_id == show_id && !episode.watched)
+        {
+            episode.watched = true;
+            marked = Some((episode.season, episode.number));
+            break;
+        }
+
+        marked
+    }
+
+    fn mark_episode_as_watched(
+        &mut self,
+        show_id: usize,
+        season: usize,
+        number: usize,
+    ) -> Option<(usize, usize)> {
+        let mut marked = None;
+
+        for episode in self.data.unwatched_episodes.iter_mut().filter(|episode| {
+            episode.show_id == show_id && episode.season == season && episode.number == number
+                && !episode.watched
+        }) {
+            episode.watched = true;
+            marked = Some((episode.season, episode.number));
+        }
+
+        marked
+    }
+
+    fn mark_season_as_watched(&mut self, show_id: usize, season: usize) -> Option<(usize, usize)> {
+        let mut marked = None;
+
+        for episode in self.data.unwatched_episodes.iter_mut().filter(|episode| {
+            episode.show_id == show_id && episode.season == season && !episode.watched
+        }) {
+            episode.watched = true;
+            marked = Some((episode.season, episode.number));
+        }
+
+        marked
+    }
 }
 
 #[cfg(test)]
@@ -263,6 +383,7 @@ mod tests {
             number: 1,
             airstamp: Some(Utc.ymd(2017, 9, 10).and_hms(0, 0, 0)),
             runtime: 60,
+            watched: false,
         }
     }
 
@@ -275,6 +396,20 @@ mod tests {
             number: 2,
             airstamp: Some(Utc.ymd(2017, 9, 17).and_hms(0, 0, 0)),
             runtime: 60,
+            watched: false,
+        }
+    }
+
+    fn the_orville_season2_ep1() -> Episode {
+        Episode {
+            episode_id: 15151515,
+            show_id: 20263,
+            name: "Future Episode".to_string(),
+            season: 2,
+            number: 1,
+            airstamp: Some(Utc.ymd(2018, 3, 15).and_hms(0, 0, 0)),
+            runtime: 60,
+            watched: false,
         }
     }
 
@@ -287,6 +422,7 @@ mod tests {
             number: 1,
             airstamp: Some(Utc.ymd(2017, 9, 25).and_hms(0, 30, 0)),
             runtime: 60,
+            watched: false,
         }
     }
 
@@ -428,5 +564,304 @@ mod tests {
                 .contains(&star_trek_discovery_ep1())
         );
         assert_eq!(1, user_data.data.unwatched_episodes.len());
+    }
+
+    #[test]
+    fn mark_next_episode_as_unwatched() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(Some((1, 1)), user_data.mark_as_watched(20263, None, None));
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep2())
+        );
+        assert_eq!(2, user_data.data.unwatched_episodes.len());
+
+        assert_eq!(
+            (1, 1),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+
+        assert_eq!(Some((1, 2)), user_data.mark_as_watched(20263, None, None));
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
+        );
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+
+        assert_eq!(None, user_data.mark_as_watched(20263, None, None));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+    }
+
+    #[test]
+    fn mark_season_as_unwatched() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(
+            Some((1, 2)),
+            user_data.mark_as_watched(20263, Some(1), None)
+        );
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
+        );
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(1), None));
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
+        );
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(2), None));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+    }
+
+    #[test]
+    fn mark_season_as_unwatched_with_gap() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            the_orville_season2_ep1(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(4, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(
+            Some((2, 1)),
+            user_data.mark_as_watched(20263, Some(2), None)
+        );
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(!user_data.data.unwatched_episodes[2].watched);
+        assert!(user_data.data.unwatched_episodes[3].watched);
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(2), None));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(!user_data.data.unwatched_episodes[2].watched);
+        assert!(user_data.data.unwatched_episodes[3].watched);
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(3), None));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(!user_data.data.unwatched_episodes[2].watched);
+        assert!(user_data.data.unwatched_episodes[3].watched);
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+    }
+
+    #[test]
+    fn mark_episode_as_unwatched() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(
+            Some((1, 1)),
+            user_data.mark_as_watched(20263, Some(1), Some(1))
+        );
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep2())
+        );
+        assert_eq!(2, user_data.data.unwatched_episodes.len());
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert_eq!(
+            (1, 1),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(
+            Some((1, 2)),
+            user_data.mark_as_watched(20263, Some(1), Some(2))
+        );
+
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
+        );
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(1), Some(2)));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(1), Some(3)));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+    }
+
+    #[test]
+    fn mark_episode_as_unwatched_with_gap() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(
+            Some((1, 2)),
+            user_data.mark_as_watched(20263, Some(1), Some(2))
+        );
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(user_data.data.unwatched_episodes[2].watched);
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(1), Some(2)));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(user_data.data.unwatched_episodes[2].watched);
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(None, user_data.mark_as_watched(20263, Some(1), Some(3)));
+
+        assert!(!user_data.data.unwatched_episodes[0].watched);
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(user_data.data.unwatched_episodes[2].watched);
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
     }
 }

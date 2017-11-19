@@ -45,6 +45,21 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
             let show = m.value_of("tv_show").unwrap();
             app.remove_show(show)?;
         }
+        ("watched", Some(m)) => {
+            let show = m.value_of("tv_show").unwrap();
+
+            let season = match m.value_of("season") {
+                Some(season) => Some(season.parse::<usize>()?),
+                None => None,
+            };
+
+            let episode = match m.value_of("episode") {
+                Some(episode) => Some(episode.parse::<usize>()?),
+                None => None,
+            };
+
+            app.mark_as_watched(show, season, episode)?;
+        }
         _ => {
             println!("{}", matches.usage());
             println!();
@@ -96,6 +111,38 @@ When no flag is given, episodes will be listed.",
                     .index(1)
                     .value_name("SHOW"),
             ),
+        )
+        .subcommand(
+            SubCommand::with_name("watched")
+                .about(
+                    "Mark episode as watched\n
+If not specified otherwise, will mark the next unwatched episode as watched.
+Use the --season and --episode arguments to override.",
+                )
+                .arg(
+                    Arg::with_name("tv_show")
+                        .required(true)
+                        .index(1)
+                        .value_name("SHOW"),
+                )
+                .arg(
+                    Arg::with_name("season")
+                        .short("s")
+                        .long("season")
+                        .takes_value(true)
+                        .help(
+                            "Specify season. \
+                             If used without --episode, will mark whole season as watched.",
+                        ),
+                )
+                .arg(
+                    Arg::with_name("episode")
+                        .short("e")
+                        .long("episode")
+                        .takes_value(true)
+                        .requires("season")
+                        .help("Specify episode"),
+                ),
         )
         .after_help(
             "CREDITS:
