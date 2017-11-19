@@ -10,6 +10,24 @@ use tvmaze_api::{Episode, Show, Status};
 
 const VERSION: u32 = 1;
 
+type EpisodeNumber = (usize, usize);
+
+fn episode_is_greater_than(episode: &Episode, episode_number: EpisodeNumber) -> bool {
+    if episode.season == episode_number.0 {
+        episode.number > episode_number.1
+    } else {
+        episode.season > episode_number.0
+    }
+}
+
+fn episode_is_less_than(episode: &Episode, episode_number: EpisodeNumber) -> bool {
+    if episode.season == episode_number.0 {
+        episode.number < episode_number.1
+    } else {
+        episode.season < episode_number.0
+    }
+}
+
 #[derive(Deserialize)]
 struct DetectVersion {
     version: u32,
@@ -211,17 +229,20 @@ impl UserData {
     /// Mark episode of given show as watched.
     ///
     /// If neither season nor episode are specified, will mark the next unwatched episode
-    /// as watched. In this case the episode number will be returned.
+    /// as watched.
     ///
     /// If only season is specified, will mark the whole season as watched.
     ///
     /// If both season and episode are specified, will mark the exact episode as watched.
+    ///
+    /// Returns episode number of last episode that was marked as watched.
     pub fn mark_as_watched(
         &mut self,
         show_id: usize,
         season: Option<usize>,
         episode: Option<usize>,
     ) -> Option<(usize, usize)> {
+        // Mark episode(s) as watched
         let last_marked = match (season, episode) {
             (Some(season), None) => self.mark_season_as_watched(show_id, season),
             (Some(season), Some(episode)) => self.mark_episode_as_watched(show_id, season, episode),
@@ -234,6 +255,8 @@ impl UserData {
             let mut last_watched = (0, 0);
             let mut show_index = None;
 
+            // Determine last watched episode (or rather the episode before the previously
+            // first unwatched episode)
             for (i, show) in self.data
                 .subscribed_shows
                 .iter()
@@ -244,26 +267,22 @@ impl UserData {
                 show_index = Some(i);
             }
 
-            // TODO: better way to compare episodes and tuples
+            // Determine if there are unwatched episodes between the last watched episode
+            // and the episodes that were now marked as watched.
             for _ in self.data
                 .unwatched_episodes
                 .iter()
                 .filter(|episode| episode.show_id == show_id && !episode.watched)
-                .filter(|episode| if episode.season == last_watched.0 {
-                    episode.number > last_watched.1
-                } else {
-                    episode.season > last_watched.0
-                })
-                .filter(|episode| if episode.season == last_marked.0 {
-                    episode.number < last_marked.1
-                } else {
-                    episode.season < last_marked.0
-                }) {
+                .filter(|episode| episode_is_greater_than(episode, last_watched))
+                .filter(|episode| episode_is_less_than(episode, last_marked))
+            {
                 gap = true;
             }
 
             // TODO: handle more complicated case where there was a gap
             // from a previous "mark as watched" command
+            //
+            // Remove all watched episodes and update last watched episode
             if !gap {
                 self.data
                     .unwatched_episodes
