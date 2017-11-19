@@ -279,17 +279,40 @@ impl UserData {
                 gap = true;
             }
 
-            // TODO: handle more complicated case where there was a gap
-            // from a previous "mark as watched" command
+            // Remove all watched episodes and update last watched episode.
             //
-            // Remove all watched episodes and update last watched episode
+            // Don't remove watched episodes that are separated by the last_watched pointer with
+            // a gap of unwatched episodes.
+            //
+            // Cleans up watched episodes if gap is eliminated.
             if !gap {
-                self.data
-                    .unwatched_episodes
-                    .retain(|episode| episode.show_id != show_id || !episode.watched);
+                let mut last_watched = last_watched;
+                let mut stop = false;
+
+                // This is slightly dirty because it depends on the internal implementation of retain()
+                // (i.e. that the vector is iterated over in order from start to end).
+                // Tests should catch it, if that implementation ever should change...
+                self.data.unwatched_episodes.retain(|episode| {
+                    if episode.show_id == show_id && episode_is_greater_than(episode, last_watched)
+                    {
+                        // If the episode is marked as watched and we haven't yet hit a gap...
+                        if episode.watched && !stop {
+                            // ... update last_watched pointer and remove episode
+                            last_watched = (episode.season, episode.number);
+                            false
+                        } else {
+                            // We hit a gap. Retain all following episodes.
+                            stop = true;
+                            true
+                        }
+                    } else {
+                        // Keep episodes of other shows
+                        true
+                    }
+                });
 
                 if let Some(index) = show_index {
-                    self.data.subscribed_shows[index].last_watched_episode = last_marked;
+                    self.data.subscribed_shows[index].last_watched_episode = last_watched;
                 }
             }
         }
@@ -414,6 +437,32 @@ mod tests {
             season: 1,
             number: 2,
             airstamp: Some(Utc.ymd(2017, 9, 17).and_hms(0, 0, 0)),
+            runtime: 60,
+            watched: false,
+        }
+    }
+
+    fn the_orville_ep3() -> Episode {
+        Episode {
+            episode_id: 1201557,
+            show_id: 20263,
+            name: "About a Girl".to_string(),
+            season: 1,
+            number: 3,
+            airstamp: Some(Utc.ymd(2017, 9, 22).and_hms(1, 0, 0)),
+            runtime: 60,
+            watched: false,
+        }
+    }
+
+    fn the_orville_ep4() -> Episode {
+        Episode {
+            episode_id: 1201558,
+            show_id: 20263,
+            name: "If the Stars Should Appear".to_string(),
+            season: 1,
+            number: 4,
+            airstamp: Some(Utc.ymd(2017, 9, 29).and_hms(1, 0, 0)),
             runtime: 60,
             watched: false,
         }
@@ -881,6 +930,119 @@ mod tests {
         assert_eq!(
             (0, 0),
             user_data.data.subscribed_shows[1].last_watched_episode
+        );
+    }
+
+    #[test]
+    fn keep_watched_episodes_after_gap() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            the_orville_ep3(),
+            the_orville_ep4(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(5, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(Some((1, 1)), user_data.mark_as_watched(20263, None, None));
+        assert_eq!(
+            (1, 1),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+        assert_eq!(4, user_data.data.unwatched_episodes.len());
+
+        assert_eq!(
+            Some((1, 4)),
+            user_data.mark_as_watched(20263, Some(1), Some(4))
+        );
+        assert_eq!(
+            (1, 1),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+        assert_eq!(4, user_data.data.unwatched_episodes.len());
+
+        assert_eq!(
+            Some((1, 2)),
+            user_data.mark_as_watched(20263, Some(1), Some(2))
+        );
+        assert_eq!(
+            (1, 2),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep3())
+        );
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&the_orville_ep4())
+        );
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(user_data.data.unwatched_episodes[2].watched);
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+    }
+
+    #[test]
+    fn remove_other_watched_episodes_if_gap_is_eliminated() {
+        let mut user_data = load_dev_user_data();
+        user_data.add_show(the_orville());
+        user_data.add_show(star_trek_discovery());
+        user_data.add_episodes(vec![
+            the_orville_ep1(),
+            the_orville_ep2(),
+            the_orville_ep3(),
+            star_trek_discovery_ep1(),
+        ]);
+        assert_eq!(4, user_data.data.unwatched_episodes.len());
+        assert_eq!(
+            (0, 0),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+
+        assert_eq!(Some((1, 1)), user_data.mark_as_watched(20263, None, None));
+        assert_eq!(
+            (1, 1),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+
+        assert_eq!(
+            Some((1, 3)),
+            user_data.mark_as_watched(20263, Some(1), Some(3))
+        );
+        assert_eq!(
+            (1, 1),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+        assert_eq!(3, user_data.data.unwatched_episodes.len());
+        assert!(!user_data.data.unwatched_episodes[1].watched);
+        assert!(user_data.data.unwatched_episodes[2].watched);
+
+        assert_eq!(
+            Some((1, 2)),
+            user_data.mark_as_watched(20263, Some(1), Some(2))
+        );
+        assert_eq!(
+            (1, 3),
+            user_data.data.subscribed_shows[1].last_watched_episode
+        );
+        assert_eq!(1, user_data.data.unwatched_episodes.len());
+        assert!(
+            user_data
+                .data
+                .unwatched_episodes
+                .contains(&star_trek_discovery_ep1())
         );
     }
 }
