@@ -31,6 +31,17 @@ Season: 1
 Episode: 7
 $
 ```
+### Mark episodes as watched
+```
+# Mark next unwatched episode as watched
+$ ./target/debug/bingers watched orville
+
+# Mark whole season as watched
+$ ./target/debug/bingers watched orville --season 1
+
+# Mark specific episode as watched
+$ ./target/debug/bingers watched orville --season 1 --episode 5
+```
 ### Unsubscribe to shows
 ```
 $ ./target/debug/bingers remove "walking dead"
