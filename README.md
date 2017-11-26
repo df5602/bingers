@@ -42,6 +42,11 @@ $ ./target/debug/bingers watched orville --season 1
 # Mark specific episode as watched
 $ ./target/debug/bingers watched orville --season 1 --episode 5
 ```
+### Update shows and episodes
+```
+# Check if new episodes are available
+$ ./target/debug/bingers update
+```
 ### Unsubscribe to shows
 ```
 $ ./target/debug/bingers remove "walking dead"
