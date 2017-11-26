@@ -1,4 +1,4 @@
-use hyper::StatusCode;
+use hyper::{StatusCode, Uri};
 
 error_chain! {
     foreign_links {
@@ -12,9 +12,9 @@ error_chain! {
     }
 
     errors {
-        HttpError(status: StatusCode) {
+        HttpError(status: StatusCode, uri: Uri) {
             description("HTTP error"),
-            display("HTTP error: Received status code {}", status),
+            display("HTTP error: Received status code {} from {}", status, uri),
         }
 
         UserDataVersionMismatch(expected: u32, actual: u32) {

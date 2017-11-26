@@ -317,7 +317,8 @@ impl App {
         let mut answer = String::new();
         io::stdin().read_line(&mut answer)?;
 
-        let mut episodes = self.api.get_episodes(show.id)?;
+        let show_ids = [show.id];
+        let mut episodes = self.api.get_episodes(&show_ids)?;
 
         // Remove episodes that haven't aired yet
         episodes.retain(|episode| match episode.airstamp {
@@ -353,10 +354,12 @@ impl App {
         };
 
         // Only keep episodes that haven't been watched yet
-        episodes.retain(|episode| if episode.season == season {
-            episode.number > number
-        } else {
-            episode.season > season
+        episodes.retain(|episode| {
+            if episode.season == season {
+                episode.number > number
+            } else {
+                episode.season > season
+            }
         });
 
         Ok((episodes, (season, number)))
@@ -547,6 +550,107 @@ impl App {
 
             self.user_data.store()?;
         }
+
+        Ok(())
+    }
+
+    /// Update TV shows and episodes
+    pub fn update(&mut self) -> Result<()> {
+        // Get TV show meta data
+        let mut show_ids = Vec::new();
+        for show in self.user_data.subscribed_shows() {
+            show_ids.push(show.id);
+        }
+
+        if show_ids.is_empty() {
+            return Ok(());
+        }
+
+        let shows = self.api.get_shows(&show_ids)?;
+
+        if self.verbose {
+            println!();
+        }
+
+        // Update user data
+        show_ids.clear();
+        for show in shows {
+            let id = show.id;
+            if self.user_data.update_show(show) {
+                show_ids.push(id);
+            }
+        }
+
+        // Get episode data
+        let mut episodes = self.api.get_episodes(&show_ids)?;
+
+        if self.verbose {
+            println!();
+        }
+
+        // Remove all episodes that haven't aired yet
+        episodes.retain(|episode| match episode.airstamp {
+            Some(airstamp) => Utc::now() >= airstamp,
+            None => false,
+        });
+
+        // Remove all episodes that have already been watched
+        {
+            let mut index = 0;
+            let mut current_show = 0;
+            let subscribed_shows = self.user_data.subscribed_shows();
+            episodes.retain(|episode| {
+                if episode.show_id != current_show {
+                    index = match subscribed_shows
+                        .iter()
+                        .position(|show| show.id == episode.show_id)
+                    {
+                        Some(index) => index,
+                        None => return false,
+                    };
+                    current_show = episode.show_id;
+                }
+
+                let last_watched = subscribed_shows[index].last_watched_episode;
+                if episode.season == last_watched.0 {
+                    episode.number > last_watched.1
+                } else {
+                    episode.season > last_watched.0
+                }
+            });
+        }
+
+        // Update user data
+        episodes.retain(|episode| !self.user_data.update_episode(episode));
+
+        // Add new episodes
+        if !episodes.is_empty() {
+            println!("New episodes:");
+            for episode in &episodes {
+                let index = match self.user_data
+                    .subscribed_shows()
+                    .iter()
+                    .position(|show| show.id == episode.show_id)
+                {
+                    Some(index) => index,
+                    None => panic!(
+                        "Show not found in user data, despite being referenced in new episode."
+                    ),
+                };
+
+                // TODO: use list view?
+                println!(
+                    "{}: {} (Season {}, Episode {})",
+                    self.user_data.subscribed_shows()[index].name,
+                    episode.name,
+                    episode.season,
+                    episode.number
+                );
+            }
+            self.user_data.add_episodes(episodes);
+        }
+
+        self.user_data.store()?;
 
         Ok(())
     }

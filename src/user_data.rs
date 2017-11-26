@@ -165,6 +165,8 @@ impl UserData {
             (&Status::Running, &Status::Running) => a.cmp(b),
             (&Status::Running, _) => Ordering::Less,
             (_, &Status::Running) => Ordering::Greater,
+            (&Status::ToBeDetermined, _) => Ordering::Less,
+            (_, &Status::ToBeDetermined) => Ordering::Greater,
             (_, _) => a.cmp(b),
         });
 
@@ -289,8 +291,8 @@ impl UserData {
                 let mut last_watched = last_watched;
                 let mut stop = false;
 
-                // This is slightly dirty because it depends on the internal implementation of retain()
-                // (i.e. that the vector is iterated over in order from start to end).
+                // This is slightly dirty because it depends on the internal implementation
+                // of retain() (i.e. that the vector is iterated over in order from start to end).
                 // Tests should catch it, if that implementation ever should change...
                 self.data.unwatched_episodes.retain(|episode| {
                     if episode.show_id == show_id && episode_is_greater_than(episode, last_watched)
@@ -369,6 +371,105 @@ impl UserData {
 
         marked
     }
+
+    /// Updates the metadata of a show with the one provided.
+    /// Returns whether last_updated field has been updated.
+    pub fn update_show(&mut self, show: Show) -> bool {
+        // Find show in user data
+        let subscribed_shows = &mut self.data.subscribed_shows;
+        let index = match subscribed_shows.iter().position(|elem| elem.id == show.id) {
+            Some(index) => index,
+            None => return false,
+        };
+        let stored_show = &mut subscribed_shows[index];
+
+        // Update name
+        if stored_show.name != show.name {
+            println!("\"{}\" changed to \"{}\"", stored_show.name, show.name);
+            stored_show.name = show.name;
+        }
+
+        // Update language
+        stored_show.language = show.language;
+
+        // Update network
+        stored_show.network = show.network;
+
+        // Update web channel
+        stored_show.web_channel = show.web_channel;
+
+        // Update status
+        if stored_show.status != show.status {
+            println!(
+                "{}: Changed from {} to {}",
+                stored_show.name,
+                stored_show.status,
+                show.status
+            );
+            stored_show.status = show.status;
+        }
+
+        // Update runtime
+        stored_show.runtime = show.runtime;
+
+        // Update schedule
+        stored_show.schedule = show.schedule;
+
+        // Last updated
+        if stored_show.last_updated != show.last_updated {
+            stored_show.last_updated = show.last_updated;
+            return true;
+        }
+
+        false
+    }
+
+    /// Updates the meta data of an episode with the one provided.
+    /// Returns true if episode has been found, false otherwise.
+    pub fn update_episode(&mut self, episode: &Episode) -> bool {
+        // Find episode in user data
+        let unwatched_episodes = &mut self.data.unwatched_episodes;
+        let index = match unwatched_episodes
+            .iter()
+            .position(|elem| elem.episode_id == episode.episode_id)
+        {
+            Some(index) => index,
+            None => return false,
+        };
+        let stored_episode = &mut unwatched_episodes[index];
+
+        // Update name
+        if stored_episode.name != episode.name {
+            println!(
+                "\"{}\" changed to \"{}\"",
+                stored_episode.name,
+                episode.name
+            );
+            stored_episode.name = episode.name.clone();
+        }
+
+        // Update season / number
+        if stored_episode.season != episode.season || stored_episode.number != episode.number {
+            println!(
+                "{}: Changed from being season {} episode {} to season {} episode {}",
+                stored_episode.name,
+                stored_episode.season,
+                stored_episode.number,
+                episode.season,
+                episode.number
+            );
+            stored_episode.season = episode.season;
+            stored_episode.number = episode.number;
+        }
+
+        // Update airstamp
+        stored_episode.airstamp = episode.airstamp;
+
+        // Update runtime
+        stored_episode.runtime = episode.runtime;
+
+        true
+    }
 }
 
 #[cfg(test)]
@@ -393,6 +494,7 @@ mod tests {
             schedule: Schedule {
                 days: vec![Day::Sunday],
             },
+            last_updated: 0,
             last_watched_episode: (0, 0),
         }
     }
@@ -412,6 +514,7 @@ mod tests {
             schedule: Schedule {
                 days: vec![Day::Thursday],
             },
+            last_updated: 0,
             last_watched_episode: (0, 0),
         }
     }

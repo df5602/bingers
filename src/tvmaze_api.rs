@@ -8,6 +8,7 @@ use hyper::client::HttpConnector;
 use hyper_tls::HttpsConnector;
 
 use futures::{Future, Stream};
+use futures::stream::FuturesUnordered;
 use tokio_core::reactor::Core;
 use tokio_retry::RetryIf;
 use tokio_retry::strategy::FibonacciBackoff;
@@ -16,7 +17,7 @@ use chrono::{DateTime, Utc};
 
 use errors::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Network {
     pub id: usize,
     pub name: String,
@@ -73,6 +74,7 @@ pub struct Show {
     pub status: Status,
     pub runtime: Option<usize>,
     pub schedule: Schedule,
+    #[serde(rename = "updated", default)] pub last_updated: u64,
     #[serde(default)] pub last_watched_episode: (usize, usize),
 }
 
@@ -234,7 +236,7 @@ impl TvMazeApi {
             }
 
             if res.status() != StatusCode::Ok {
-                return Err(ErrorKind::HttpError(res.status()).into());
+                return Err(ErrorKind::HttpError(res.status(), uri).into());
             }
 
             Ok(res)
@@ -256,7 +258,7 @@ impl TvMazeApi {
             retry_strategy,
             move || self.create_get_request(uri.clone()),
             |e: &::errors::Error| match *e {
-                Error(ErrorKind::HttpError(status), _) => status == StatusCode::TooManyRequests,
+                Error(ErrorKind::HttpError(status, _), _) => status == StatusCode::TooManyRequests,
                 _ => false,
             },
         );
@@ -292,35 +294,68 @@ impl TvMazeApi {
             .chain_err(|| "HTTP request failed")
     }
 
-    pub fn get_episodes(&mut self, id: usize) -> Result<Vec<Episode>> {
-        // Construct URI
-        let uri = &format!("https://api.tvmaze.com/shows/{}/episodes", id);
-        let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
+    pub fn get_shows(&mut self, ids: &[usize]) -> Result<Vec<Show>> {
+        let mut requests = FuturesUnordered::new();
+        for id in ids {
+            // Construct URI
+            let uri = &format!("https://api.tvmaze.com/shows/{}", id);
+            let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
 
-        // Send request and get response
-        let response = self.make_get_request(uri);
+            // Send request and get response
+            let response = self.make_get_request(uri);
 
-        // Deserialize response into a Vec<Episode>
-        let episodes = response.and_then(|body| {
-            let episodes: Result<Vec<Episode>> =
-                ::serde_json::from_slice(&body).chain_err(|| "Unable to deserialize HTTP response");
+            // Deserialize response into a Show
+            let show = response.and_then(|body| {
+                ::serde_json::from_slice::<Show>(&body)
+                    .chain_err(|| "Unable to deserialize HTTP response")
+            });
 
-            let mut episodes = match episodes {
-                Ok(episodes) => episodes,
-                Err(e) => return Err(e),
-            };
-
-            for episode in &mut episodes {
-                episode.show_id = id;
-            }
-
-            Ok(episodes)
-        });
+            // Queue request
+            requests.push(show);
+        }
 
         // Run future
         self.core
             .borrow_mut()
-            .run(episodes)
+            .run(requests.collect())
+            .chain_err(|| "HTTP request failed")
+    }
+
+    pub fn get_episodes(&mut self, ids: &[usize]) -> Result<Vec<Episode>> {
+        let mut requests = FuturesUnordered::new();
+        for id in ids {
+            // Construct URI
+            let uri = &format!("https://api.tvmaze.com/shows/{}/episodes", id);
+            let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
+
+            // Send request and get response
+            let response = self.make_get_request(uri);
+
+            // Deserialize response into a Vec<Episode>
+            let episodes = response.and_then(move |body| {
+                let episodes: Result<Vec<Episode>> = ::serde_json::from_slice(&body)
+                    .chain_err(|| "Unable to deserialize HTTP response");
+
+                let mut episodes = match episodes {
+                    Ok(episodes) => episodes,
+                    Err(e) => return Err(e),
+                };
+
+                for episode in &mut episodes {
+                    episode.show_id = *id;
+                }
+
+                Ok(episodes)
+            });
+
+            // Queue request
+            requests.push(episodes);
+        }
+
+        // Run future
+        self.core
+            .borrow_mut()
+            .run(requests.concat2())
             .chain_err(|| "HTTP request failed")
     }
 }
