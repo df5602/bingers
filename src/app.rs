@@ -621,32 +621,30 @@ impl App {
         }
 
         // Update user data
+        // TODO: maybe store both id and (season, number) in last_watched_episode field?
+        //       This way, one could detect if episode number for given id ever changes..
         episodes.retain(|episode| !self.user_data.update_episode(episode));
 
         // Add new episodes
         if !episodes.is_empty() {
-            println!("New episodes:");
-            for episode in &episodes {
-                let index = match self.user_data
-                    .subscribed_shows()
-                    .iter()
-                    .position(|show| show.id == episode.show_id)
-                {
-                    Some(index) => index,
-                    None => panic!(
-                        "Show not found in user data, despite being referenced in new episode."
-                    ),
-                };
+            {
+                let mut show_names: HashMap<usize, &str> = HashMap::new();
+                let shows = self.user_data.subscribed_shows();
+                for show in shows {
+                    show_names.insert(show.id, &show.name);
+                }
 
-                // TODO: use list view?
-                println!(
-                    "{}: {} (Season {}, Episode {})",
-                    self.user_data.subscribed_shows()[index].name,
-                    episode.name,
-                    episode.season,
-                    episode.number
+                println!("New episodes:");
+                println!();
+
+                App::print_episode_list_as_table(
+                    &episodes,
+                    &HorizontalSeparator::Week,
+                    Some(&show_names),
                 );
+                println!();
             }
+
             self.user_data.add_episodes(episodes);
         }
 

@@ -253,6 +253,8 @@ impl TvMazeApi {
     ) -> Box<Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a> {
         let retry_strategy = FibonacciBackoff::from_millis(1000).take(6);
 
+        // TODO: use e.g. futures-poll-log crate to trace retry behaviour. I have the impression,
+        //       something isn't behaving quite as it should..
         let retry_future = RetryIf::spawn(
             self.core.borrow().handle(),
             retry_strategy,
