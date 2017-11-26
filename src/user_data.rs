@@ -162,12 +162,15 @@ impl UserData {
 
         // TODO: sort by date of most recent episode
         subscribed_shows.sort_by(|a, b| match (&a.status, &b.status) {
-            (&Status::Running, &Status::Running) => a.cmp(b),
+            (&Status::Running, &Status::Running) => b.last_updated.cmp(&a.last_updated),
             (&Status::Running, _) => Ordering::Less,
             (_, &Status::Running) => Ordering::Greater,
+            (&Status::ToBeDetermined, &Status::ToBeDetermined) => {
+                b.last_updated.cmp(&a.last_updated)
+            }
             (&Status::ToBeDetermined, _) => Ordering::Less,
             (_, &Status::ToBeDetermined) => Ordering::Greater,
-            (_, _) => a.cmp(b),
+            (_, _) => b.last_updated.cmp(&a.last_updated),
         });
 
         subscribed_shows
