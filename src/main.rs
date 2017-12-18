@@ -60,8 +60,9 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
 
             app.mark_as_watched(show, season, episode)?;
         }
-        ("update", Some(_)) => {
-            app.update()?;
+        ("update", Some(m)) => {
+            let force = m.is_present("force");
+            app.update(force)?;
         }
         _ => {
             println!("{}", matches.usage());
@@ -147,7 +148,16 @@ Use the --season and --episode arguments to override.",
                         .help("Specify episode"),
                 ),
         )
-        .subcommand(SubCommand::with_name("update").about("Update TV shows and episodes"))
+        .subcommand(
+            SubCommand::with_name("update")
+                .about("Update TV shows and episodes")
+                .arg(
+                    Arg::with_name("force")
+                        .short("f")
+                        .long("force")
+                        .help("Force update of all shows and episodes"),
+                ),
+        )
         .after_help(
             "CREDITS:
     Data provided by TVmaze.com\n",

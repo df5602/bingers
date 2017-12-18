@@ -419,6 +419,7 @@ impl UserData {
         stored_show.schedule = show.schedule;
 
         // Last updated
+        // TODO: also store previous_episode field and see if that has changed
         if stored_show.last_updated != show.last_updated {
             stored_show.last_updated = show.last_updated;
             return true;

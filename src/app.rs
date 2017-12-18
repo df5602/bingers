@@ -555,7 +555,7 @@ impl App {
     }
 
     /// Update TV shows and episodes
-    pub fn update(&mut self) -> Result<()> {
+    pub fn update(&mut self, force: bool) -> Result<()> {
         // Get TV show meta data
         let mut show_ids = Vec::new();
         for show in self.user_data.subscribed_shows() {
@@ -576,7 +576,7 @@ impl App {
         show_ids.clear();
         for show in shows {
             let id = show.id;
-            if self.user_data.update_show(show) {
+            if self.user_data.update_show(show) || force {
                 show_ids.push(id);
             }
         }
