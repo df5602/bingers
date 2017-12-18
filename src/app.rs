@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 use std::collections::HashMap;
-use std::cmp::max;
+use std::cmp::{max, Ordering};
 
 use chrono::{Datelike, Utc};
 
@@ -633,6 +633,13 @@ impl App {
                 for show in shows {
                     show_names.insert(show.id, &show.name);
                 }
+
+                episodes.sort_by(|a, b| match (a.airstamp, b.airstamp) {
+                    (Some(date_a), Some(date_b)) => date_a.cmp(&date_b),
+                    (Some(_), None) => Ordering::Greater,
+                    (None, Some(_)) => Ordering::Less,
+                    (None, None) => b.cmp(a),
+                });
 
                 println!("New episodes:");
                 println!();
