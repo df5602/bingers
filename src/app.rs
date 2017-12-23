@@ -175,22 +175,22 @@ impl App {
         };
 
         if max_show_length > 0 {
-            print!("{: <width$} |", "Show", width = max_show_length);
+            print!("{: <width$} | ", "Show", width = max_show_length);
         }
         println!(
-            " Season | Episode | {: <width$} | Air Date",
+            "Season | Episode | {: <width$} | Air Date",
             "Name",
             width = max_ep_length
         );
 
         let mut hline = if max_show_length > 0 {
-            format!("{:-<width$}-|", "-", width = max_show_length)
+            format!("{:-<width$}-|-", "-", width = max_show_length)
         } else {
             "".to_string()
         };
 
         hline.push_str(&format!(
-            "--------|---------|-{:-<width$}-|-------------------",
+            "-------|---------|-{:-<width$}-|-------------------",
             "-",
             width = max_ep_length
         ));
@@ -234,11 +234,11 @@ impl App {
                     "???"
                 };
 
-                print!("{: <width$} |", name, width = max_show_length);
+                print!("{: <width$} | ", name, width = max_show_length);
             };
 
             println!(
-                " {: >6} | {: >7} | {: <width$} | {}",
+                "{: >6} | {: >7} | {: <width$} | {}",
                 episode.season,
                 episode.number,
                 episode.name,
