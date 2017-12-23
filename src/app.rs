@@ -178,7 +178,7 @@ impl App {
             print!("{: <width$} |", "Show", width = max_show_length);
         }
         println!(
-            "Season | Episode | {: <width$} | Air Date",
+            " Season | Episode | {: <width$} | Air Date",
             "Name",
             width = max_ep_length
         );
@@ -190,7 +190,7 @@ impl App {
         };
 
         hline.push_str(&format!(
-            "-------|---------|-{:-<width$}-|-------------------",
+            "--------|---------|-{:-<width$}-|-------------------",
             "-",
             width = max_ep_length
         ));
@@ -238,7 +238,7 @@ impl App {
             };
 
             println!(
-                "{: >6} | {: >7} | {: <width$} | {}",
+                " {: >6} | {: >7} | {: <width$} | {}",
                 episode.season,
                 episode.number,
                 episode.name,
