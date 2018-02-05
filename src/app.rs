@@ -221,7 +221,6 @@ impl App {
             current_season = episode.season;
             current_week = this_week;
 
-
             let air_date = match episode.airstamp {
                 Some(airstamp) => format!("{}", airstamp.format("%a, %b %d, %Y")),
                 None => "TBD".to_string(),
@@ -528,23 +527,18 @@ impl App {
                 if let Some(episode) = episode {
                     println!(
                         "Marked season {} episode {} of {} as watched.",
-                        season,
-                        episode,
-                        show_to_update.name
+                        season, episode, show_to_update.name
                     );
                 } else {
                     println!(
                         "Marked season {} of {} as watched.",
-                        season,
-                        show_to_update.name
+                        season, show_to_update.name
                     );
                 }
             } else {
                 println!(
                     "Marked season {} episode {} of {} as watched.",
-                    last_marked.0,
-                    last_marked.1,
-                    show_to_update.name
+                    last_marked.0, last_marked.1, show_to_update.name
                 );
             }
 

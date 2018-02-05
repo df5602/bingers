@@ -70,15 +70,12 @@ impl UserData {
             Ok(mut file) => {
                 // Read user data from file
                 let mut file_content = String::new();
-                file.read_to_string(&mut file_content).chain_err(|| {
-                    format!("Unable to read user data from {:?}", user_data_file)
-                })?;
+                file.read_to_string(&mut file_content)
+                    .chain_err(|| format!("Unable to read user data from {:?}", user_data_file))?;
 
                 // Detect version
                 let detect_version: DetectVersion = ::serde_json::from_str(&file_content)
-                    .chain_err(|| {
-                        format!("Unable to parse version from {:?}", user_data_file)
-                    })?;
+                    .chain_err(|| format!("Unable to parse version from {:?}", user_data_file))?;
 
                 if detect_version.version > VERSION {
                     return Err(
@@ -115,9 +112,8 @@ impl UserData {
         user_data_json.push("user_data.json");
 
         // Create directory (if necessary)
-        fs::create_dir_all(&self.path).chain_err(|| {
-            format!("Unable to create user data directory {:?}", self.path)
-        })?;
+        fs::create_dir_all(&self.path)
+            .chain_err(|| format!("Unable to create user data directory {:?}", self.path))?;
 
         // Create temporary file and serialize user data into it
         let mut tmp_file = OpenOptions::new()
@@ -130,14 +126,13 @@ impl UserData {
         let json =
             ::serde_json::to_string(&self.data).chain_err(|| "Unable to serialize user data.")?;
 
-        tmp_file.write_all(json.as_bytes()).chain_err(|| {
-            format!("Unable to write user data to {:?}", user_data_tmp)
-        })?;
+        tmp_file
+            .write_all(json.as_bytes())
+            .chain_err(|| format!("Unable to write user data to {:?}", user_data_tmp))?;
 
         // Move tmp file into actual user data file
-        fs::rename(&user_data_tmp, &user_data_json).chain_err(|| {
-            format!("Unable to move {:?} to {:?}", user_data_tmp, user_data_json)
-        })?;
+        fs::rename(&user_data_tmp, &user_data_json)
+            .chain_err(|| format!("Unable to move {:?} to {:?}", user_data_tmp, user_data_json))?;
 
         Ok(())
     }
@@ -405,9 +400,7 @@ impl UserData {
         if stored_show.status != show.status {
             println!(
                 "{}: Changed from {} to {}",
-                stored_show.name,
-                stored_show.status,
-                show.status
+                stored_show.name, stored_show.status, show.status
             );
             stored_show.status = show.status;
         }
@@ -446,8 +439,7 @@ impl UserData {
         if stored_episode.name != episode.name {
             println!(
                 "\"{}\" changed to \"{}\"",
-                stored_episode.name,
-                episode.name
+                stored_episode.name, episode.name
             );
             stored_episode.name = episode.name.clone();
         }
