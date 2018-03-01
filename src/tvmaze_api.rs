@@ -47,8 +47,10 @@ pub struct Schedule {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum Status {
-    #[serde(rename = "To Be Determined")] ToBeDetermined,
-    #[serde(rename = "In Development")] InDevelopment,
+    #[serde(rename = "To Be Determined")]
+    ToBeDetermined,
+    #[serde(rename = "In Development")]
+    InDevelopment,
     Running,
     Ended,
 }
@@ -74,8 +76,10 @@ pub struct Show {
     pub status: Status,
     pub runtime: Option<usize>,
     pub schedule: Schedule,
-    #[serde(rename = "updated", default)] pub last_updated: u64,
-    #[serde(default)] pub last_watched_episode: (usize, usize),
+    #[serde(rename = "updated", default)]
+    pub last_updated: u64,
+    #[serde(default)]
+    pub last_watched_episode: (usize, usize),
 }
 
 impl Ord for Show {
@@ -152,14 +156,17 @@ pub struct SearchResult {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Episode {
-    #[serde(rename = "id")] pub episode_id: usize,
-    #[serde(default)] pub show_id: usize,
+    #[serde(rename = "id")]
+    pub episode_id: usize,
+    #[serde(default)]
+    pub show_id: usize,
     pub name: String,
     pub season: usize,
     pub number: usize,
     pub airstamp: Option<DateTime<Utc>>,
     pub runtime: usize,
-    #[serde(default)] pub watched: bool,
+    #[serde(default)]
+    pub watched: bool,
 }
 
 impl Ord for Episode {
