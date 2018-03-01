@@ -220,8 +220,8 @@ impl TvMazeApi {
 
         Ok(Self {
             core: RefCell::new(core),
-            client: client,
-            verbose: verbose,
+            client,
+            verbose,
         })
     }
 

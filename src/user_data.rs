@@ -49,7 +49,7 @@ pub struct UserData {
 impl UserData {
     fn new(path: PathBuf) -> Self {
         Self {
-            path: path,
+            path,
             data: UserDataV1 {
                 version: 1,
                 subscribed_shows: Vec::new(),
