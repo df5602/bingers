@@ -15,15 +15,15 @@ extern crate serde_derive;
 #[macro_use]
 extern crate error_chain;
 
+mod app;
 mod errors;
 mod tvmaze_api;
 mod user_data;
-mod app;
 
 use clap::{Arg, SubCommand};
 
-use errors::*;
 use error_chain::ChainedError;
+use errors::*;
 
 use app::App;
 

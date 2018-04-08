@@ -1,14 +1,14 @@
-use std::str::FromStr;
-use std::fmt;
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::fmt;
+use std::str::FromStr;
 
-use hyper::{self, Client, StatusCode, Uri};
 use hyper::client::HttpConnector;
+use hyper::{self, Client, StatusCode, Uri};
 use hyper_tls::HttpsConnector;
 
-use futures::{Future, Stream};
 use futures::stream::FuturesUnordered;
+use futures::{Future, Stream};
 use tokio_core::reactor::Core;
 use tokio_retry::RetryIf;
 use tokio_retry::strategy::FibonacciBackoff;

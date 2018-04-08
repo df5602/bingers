@@ -1,6 +1,6 @@
-use std::io::{self, Write};
-use std::collections::HashMap;
 use std::cmp::{max, Ordering};
+use std::collections::HashMap;
+use std::io::{self, Write};
 
 use chrono::{Datelike, Utc};
 

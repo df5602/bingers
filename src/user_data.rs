@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+use std::cmp::Ordering;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
-use std::cmp::Ordering;
+use std::path::PathBuf;
 
 use app_dirs::{get_data_root, AppDataType};
 
