@@ -145,6 +145,8 @@ impl App {
     //     Ok(Some(*selected_show))
     // }
 
+    #[allow(unknown_lints)]
+    #[allow(print_literal)] // see clippy issue #2634
     fn print_episode_list_as_table<T: AsRef<Episode>>(
         episodes: &[T],
         separator: &HorizontalSeparator,
@@ -247,6 +249,8 @@ impl App {
         }
     }
 
+    #[allow(unknown_lints)]
+    #[allow(print_literal)] // see clippy issue #2634
     fn print_show_list_as_table(shows: &[&Show], unwatched_episode_count: &HashMap<usize, usize>) {
         // Calculate maximum length of show and network name
         let (max_length_name, max_length_network) = shows
