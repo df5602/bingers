@@ -9,6 +9,7 @@ error_chain! {
         SerdeJson(::serde_json::error::Error);
         AppDirs(::app_dirs::AppDirsError);
         ParseIntError(::std::num::ParseIntError);
+        TokioTimer(::tokio_timer::Error);
     }
 
     errors {
