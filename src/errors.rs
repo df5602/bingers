@@ -2,14 +2,14 @@ use hyper::{StatusCode, Uri};
 
 error_chain! {
     foreign_links {
-        Io(::std::io::Error);
-        NativeTls(::native_tls::Error);
-        Uri(::hyper::error::UriError);
-        Hyper(::hyper::Error);
-        SerdeJson(::serde_json::error::Error);
-        AppDirs(::app_dirs::AppDirsError);
+        IoError(::std::io::Error);
+        NativeTlsError(::native_tls::Error);
+        UriError(::hyper::error::UriError);
+        HyperError(::hyper::Error);
+        SerdeJsonError(::serde_json::error::Error);
+        AppDirsError(::app_dirs::AppDirsError);
         ParseIntError(::std::num::ParseIntError);
-        TokioTimer(::tokio_timer::Error);
+        TokioTimerError(::tokio_timer::Error);
     }
 
     errors {
