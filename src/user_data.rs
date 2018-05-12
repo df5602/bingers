@@ -146,8 +146,6 @@ impl UserData {
         &self.data.subscribed_shows
     }
 
-    #[allow(unknown_lints)]
-    #[allow(match_same_arms)] // Clippy issue #860
     pub fn subscribed_shows_by_most_recent(&self) -> Vec<&Show> {
         let mut subscribed_shows = Vec::new();
 
