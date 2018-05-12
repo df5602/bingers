@@ -229,7 +229,7 @@ impl TvMazeApi {
     fn create_get_request(
         &self,
         uri: Uri,
-    ) -> Box<Future<Item = hyper::Response, Error = ::errors::Error>> {
+    ) -> impl Future<Item = hyper::Response, Error = ::errors::Error> {
         let request = self.client.get(uri.clone());
         let verbose = self.verbose;
 
@@ -237,7 +237,7 @@ impl TvMazeApi {
             println!("GET {}", uri);
         }
 
-        Box::new(request.map_err(|e| e.into()).and_then(move |res| {
+        request.map_err(|e| e.into()).and_then(move |res| {
             if verbose {
                 println!("{} {}", res.status(), uri);
             }
@@ -247,7 +247,7 @@ impl TvMazeApi {
             }
 
             Ok(res)
-        }))
+        })
     }
 
     /// Make a GET request. Rate limiting of server is handled with retries.
@@ -257,7 +257,7 @@ impl TvMazeApi {
     fn make_get_request<'a>(
         &'a self,
         uri: Uri,
-    ) -> Box<Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a> {
+    ) -> impl Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a {
         let retry_strategy = FibonacciBackoff::from_millis(1000).take(6);
 
         // TODO: use e.g. futures-poll-log crate to trace retry behaviour. I have the impression,
@@ -271,11 +271,9 @@ impl TvMazeApi {
             },
         );
 
-        Box::new(
-            retry_future
-                .map_err(|e| e.into())
-                .and_then(|res| res.body().concat2().map_err(|e| e.into())),
-        )
+        retry_future
+            .map_err(|e| e.into())
+            .and_then(|res| res.body().concat2().map_err(|e| e.into()))
     }
 
     /// Searches TvMaze.com for shows with a given name.
