@@ -34,7 +34,8 @@ impl App {
         for result in search_results
             .iter()
             .filter(|result| {
-                result.show.status == Status::Running || result.show.status == Status::Ended
+                result.show.status == Status::Running
+                    || result.show.status == Status::Ended
                     || result.show.status == Status::ToBeDetermined
             })
             .filter(|result| {

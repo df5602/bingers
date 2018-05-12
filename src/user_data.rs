@@ -347,7 +347,9 @@ impl UserData {
         let mut marked = None;
 
         for episode in self.data.unwatched_episodes.iter_mut().filter(|episode| {
-            episode.show_id == show_id && episode.season == season && episode.number == number
+            episode.show_id == show_id
+                && episode.season == season
+                && episode.number == number
                 && !episode.watched
         }) {
             episode.watched = true;

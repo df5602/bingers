@@ -10,8 +10,8 @@ use hyper_tls::HttpsConnector;
 use futures::stream::FuturesUnordered;
 use futures::{Future, Stream};
 use tokio_core::reactor::Core;
-use tokio_retry::RetryIf;
 use tokio_retry::strategy::FibonacciBackoff;
+use tokio_retry::RetryIf;
 
 use chrono::{DateTime, Utc};
 
