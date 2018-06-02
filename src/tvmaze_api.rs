@@ -212,11 +212,10 @@ pub struct TvMazeApi {
 impl TvMazeApi {
     pub fn new(verbose: bool) -> Result<Self> {
         let core = Core::new()?;
-        let handle = core.handle();
 
-        let connector = HttpsConnector::new(4, &handle)?;
+        let https = HttpsConnector::new(4)?;
 
-        let client = Client::configure().connector(connector).build(&handle);
+        let client = Client::builder().build(https);
 
         Ok(Self {
             core: RefCell::new(core),
@@ -229,7 +228,7 @@ impl TvMazeApi {
     fn create_get_request(
         &self,
         uri: Uri,
-    ) -> impl Future<Item = hyper::Response, Error = ::errors::Error> {
+    ) -> impl Future<Item = hyper::Response<hyper::Body>, Error = ::errors::Error> {
         let request = self.client.get(uri.clone());
         let verbose = self.verbose;
 
@@ -242,7 +241,7 @@ impl TvMazeApi {
                 println!("{} {}", res.status(), uri);
             }
 
-            if res.status() != StatusCode::Ok {
+            if res.status() != StatusCode::OK {
                 return Err(ErrorKind::HttpError(res.status(), uri).into());
             }
 
@@ -266,20 +265,22 @@ impl TvMazeApi {
             retry_strategy,
             move || self.create_get_request(uri.clone()),
             |e: &::errors::Error| match *e {
-                Error(ErrorKind::HttpError(status, _), _) => status == StatusCode::TooManyRequests,
+                Error(ErrorKind::HttpError(status, _), _) => {
+                    status == StatusCode::TOO_MANY_REQUESTS
+                }
                 _ => false,
             },
         );
 
         retry_future
             .map_err(|e| e.into())
-            .and_then(|res| res.body().concat2().map_err(|e| e.into()))
+            .and_then(|res| res.into_body().concat2().map_err(|e| e.into()))
     }
 
     /// Searches TvMaze.com for shows with a given name.
     pub fn search_shows(&mut self, show: &str) -> Result<Vec<SearchResult>> {
         // Construct URI
-        let uri = &format!("https://api.tvmaze.com/search/shows?q=\"{}\"", show);
+        let uri = &format!("https://api.tvmaze.com/search/shows?q=%22{}%22", show);
         let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
 
         // Send request and get response

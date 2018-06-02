@@ -4,7 +4,6 @@ error_chain! {
     foreign_links {
         IoError(::std::io::Error);
         NativeTlsError(::native_tls::Error);
-        UriError(::hyper::error::UriError);
         HyperError(::hyper::Error);
         SerdeJsonError(::serde_json::error::Error);
         AppDirsError(::app_dirs::AppDirsError);
