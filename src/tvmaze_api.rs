@@ -7,6 +7,8 @@ use hyper::client::HttpConnector;
 use hyper::{self, Client, StatusCode, Uri};
 use hyper_tls::HttpsConnector;
 
+use percent_encoding::{utf8_percent_encode, QUERY_ENCODE_SET};
+
 use futures::stream::FuturesUnordered;
 use futures::{Future, Stream};
 use tokio_core::reactor::Core;
@@ -280,7 +282,10 @@ impl TvMazeApi {
     /// Searches TvMaze.com for shows with a given name.
     pub fn search_shows(&mut self, show: &str) -> Result<Vec<SearchResult>> {
         // Construct URI
-        let uri = &format!("https://api.tvmaze.com/search/shows?q=%22{}%22", show);
+        let uri = &format!(
+            "https://api.tvmaze.com/search/shows?q={}",
+            utf8_percent_encode(show, QUERY_ENCODE_SET)
+        );
         let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
 
         // Send request and get response

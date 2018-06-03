@@ -5,6 +5,7 @@ authors = ["df5602 <dominik@fankhausers.ch>"]
 
 [dependencies]
 hyper = "*"
+percent-encoding = "*"
 hyper-tls = "*"
 native-tls = "*"
 futures = "*"

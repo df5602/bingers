@@ -5,6 +5,7 @@ extern crate futures;
 extern crate hyper;
 extern crate hyper_tls;
 extern crate native_tls;
+extern crate percent_encoding;
 extern crate serde_json;
 extern crate tokio_core;
 extern crate tokio_retry;
