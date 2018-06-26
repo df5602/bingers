@@ -7,7 +7,6 @@ authors = ["df5602 <dominik@fankhausers.ch>"]
 hyper = "*"
 percent-encoding = "*"
 hyper-tls = "*"
-native-tls = "*"
 futures = "*"
 tokio-core = "*"
 tokio-retry = "*"

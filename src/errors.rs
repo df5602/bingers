@@ -3,7 +3,7 @@ use hyper::{StatusCode, Uri};
 error_chain! {
     foreign_links {
         IoError(::std::io::Error);
-        NativeTlsError(::native_tls::Error);
+        HyperTlsError(::hyper_tls::Error);
         HyperError(::hyper::Error);
         SerdeJsonError(::serde_json::error::Error);
         AppDirsError(::app_dirs::AppDirsError);
