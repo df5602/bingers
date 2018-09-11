@@ -255,7 +255,8 @@ impl UserData {
 
             // Determine last watched episode (or rather the episode before the previously
             // first unwatched episode)
-            for (i, show) in self.data
+            for (i, show) in self
+                .data
                 .subscribed_shows
                 .iter()
                 .enumerate()
@@ -267,7 +268,8 @@ impl UserData {
 
             // Determine if there are unwatched episodes between the last watched episode
             // and the episodes that were now marked as watched.
-            for _ in self.data
+            for _ in self
+                .data
                 .unwatched_episodes
                 .iter()
                 .filter(|episode| episode.show_id == show_id && !episode.watched)
@@ -323,7 +325,8 @@ impl UserData {
     fn mark_next_episode_as_watched(&mut self, show_id: usize) -> Option<(usize, usize)> {
         let mut marked = None;
 
-        for episode in self.data
+        for episode in self
+            .data
             .unwatched_episodes
             .iter_mut()
             .filter(|episode| episode.show_id == show_id && !episode.watched)
@@ -653,9 +656,11 @@ mod tests {
 
         user_data.remove_show(&star_trek_discovery());
 
-        assert!(!user_data
-            .subscribed_shows()
-            .contains(&star_trek_discovery()));
+        assert!(
+            !user_data
+                .subscribed_shows()
+                .contains(&star_trek_discovery())
+        );
         assert!(user_data.subscribed_shows().contains(&the_orville()));
     }
 

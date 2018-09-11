@@ -37,8 +37,7 @@ impl App {
                 result.show.status == Status::Running
                     || result.show.status == Status::Ended
                     || result.show.status == Status::ToBeDetermined
-            })
-            .filter(|result| {
+            }).filter(|result| {
                 if let Some(ref language) = result.show.language {
                     if language == "English" {
                         return true;
@@ -169,8 +168,7 @@ impl App {
                     } else {
                         0
                     }
-                })
-                .fold(0, max)
+                }).fold(0, max)
         } else {
             0
         };
@@ -369,7 +367,8 @@ impl App {
     ///
     /// Calls web API to search for shows with the given name.
     pub fn add_show(&mut self, show: &str) -> Result<()> {
-        let search_results = self.api
+        let search_results = self
+            .api
             .search_shows(show)
             .chain_err(|| format!("Unable to search for show [\"{}\"]", show))?;
 
@@ -401,7 +400,8 @@ impl App {
     /// Calls web API to search for shows with the given name, then matches the results against
     /// the list of subscribed shows.
     pub fn remove_show(&mut self, show: &str) -> Result<()> {
-        let search_results = self.api
+        let search_results = self
+            .api
             .search_shows(show)
             .chain_err(|| format!("Unable to search for show [\"{}\"]", show))?;
 
@@ -493,7 +493,8 @@ impl App {
         season: Option<usize>,
         episode: Option<usize>,
     ) -> Result<()> {
-        let search_results = self.api
+        let search_results = self
+            .api
             .search_shows(show)
             .chain_err(|| format!("Unable to search for show [\"{}\"]", show))?;
 
@@ -520,7 +521,8 @@ impl App {
             println!();
         }
 
-        let last_marked = self.user_data
+        let last_marked = self
+            .user_data
             .mark_as_watched(show_to_update.id, season, episode);
 
         if let Some(last_marked) = last_marked {
