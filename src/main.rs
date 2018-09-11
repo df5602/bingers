@@ -1,3 +1,6 @@
+// See clippy issue #3159 (https://github.com/rust-lang-nursery/rust-clippy/issues/3159)
+#![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
+
 extern crate app_dirs;
 extern crate chrono;
 extern crate clap;

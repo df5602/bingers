@@ -320,8 +320,8 @@ impl UserData {
         last_marked
     }
 
-    #[allow(unknown_lints)]
-    #[allow(never_loop)]
+    // See clippy issue #3159 (https://github.com/rust-lang-nursery/rust-clippy/issues/3159)
+    #[cfg_attr(feature = "cargo-clippy", allow(clippy::never_loop))]
     fn mark_next_episode_as_watched(&mut self, show_id: usize) -> Option<(usize, usize)> {
         let mut marked = None;
 
