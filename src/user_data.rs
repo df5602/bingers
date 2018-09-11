@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use app_dirs::{get_data_root, AppDataType};
 
-use errors::*;
-use tvmaze_api::{Episode, Show, Status};
+use crate::errors::*;
+use crate::tvmaze_api::{Episode, Show, Status};
 
 const VERSION: u32 = 1;
 
@@ -476,7 +476,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::*;
-    use tvmaze_api::{Day, Network, Schedule, Status};
+    use crate::tvmaze_api::{Day, Network, Schedule, Status};
 
     fn star_trek_discovery() -> Show {
         Show {

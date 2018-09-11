@@ -1,37 +1,24 @@
 // See clippy issue #3159 (https://github.com/rust-lang-nursery/rust-clippy/issues/3159)
 #![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
 
-extern crate app_dirs;
-extern crate chrono;
-extern crate clap;
-extern crate futures;
-extern crate hyper;
-extern crate hyper_tls;
-extern crate percent_encoding;
-extern crate serde_json;
-extern crate tokio_core;
-extern crate tokio_retry;
-extern crate tokio_timer;
-
 #[macro_use]
 extern crate serde_derive;
-
-#[macro_use]
-extern crate error_chain;
 
 mod app;
 mod errors;
 mod tvmaze_api;
 mod user_data;
 
+use serde_derive::{Deserialize, Serialize};
+
 use clap::{Arg, SubCommand};
 
+use crate::errors::*;
 use error_chain::ChainedError;
-use errors::*;
 
-use app::App;
+use crate::app::App;
 
-fn run(matches: &clap::ArgMatches) -> Result<()> {
+fn run(matches: &clap::ArgMatches<'_>) -> Result<()> {
     let mut app = App::new()?;
 
     // Dispatch to subcommands

@@ -17,7 +17,7 @@ use tokio_retry::RetryIf;
 
 use chrono::{DateTime, Utc};
 
-use errors::*;
+use crate::errors::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Network {
@@ -37,7 +37,7 @@ pub enum Day {
 }
 
 impl fmt::Display for Day {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -58,7 +58,7 @@ pub enum Status {
 }
 
 impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Status::ToBeDetermined => write!(f, "TBD"),
             Status::InDevelopment => write!(f, "In Development"),
@@ -105,7 +105,7 @@ impl PartialEq for Show {
 impl Eq for Show {}
 
 impl fmt::Display for Show {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let scheduled_days = if !self.schedule.days.is_empty() {
             if self.status == Status::Running {
                 format!("{}s on ", self.schedule.days[0])
@@ -230,7 +230,7 @@ impl TvMazeApi {
     fn create_get_request(
         &self,
         uri: Uri,
-    ) -> impl Future<Item = hyper::Response<hyper::Body>, Error = ::errors::Error> {
+    ) -> impl Future<Item = hyper::Response<hyper::Body>, Error = crate::errors::Error> {
         let request = self.client.get(uri.clone());
         let verbose = self.verbose;
 
@@ -258,7 +258,7 @@ impl TvMazeApi {
     fn make_get_request<'a>(
         &'a self,
         uri: Uri,
-    ) -> impl Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a {
+    ) -> impl Future<Item = hyper::Chunk, Error = crate::errors::Error> + 'a {
         let retry_strategy = FibonacciBackoff::from_millis(1000).take(6);
 
         // TODO: use e.g. futures-poll-log crate to trace retry behaviour. I have the impression,
@@ -266,7 +266,7 @@ impl TvMazeApi {
         let retry_future = RetryIf::spawn(
             retry_strategy,
             move || self.create_get_request(uri.clone()),
-            |e: &::errors::Error| match *e {
+            |e: &crate::errors::Error| match *e {
                 Error(ErrorKind::HttpError(status, _), _) => {
                     status == StatusCode::TOO_MANY_REQUESTS
                 }

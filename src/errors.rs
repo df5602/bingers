@@ -1,3 +1,4 @@
+use error_chain::*;
 use hyper::{StatusCode, Uri};
 
 error_chain! {

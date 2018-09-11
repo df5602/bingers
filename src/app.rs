@@ -4,9 +4,9 @@ use std::io::{self, Write};
 
 use chrono::{Datelike, Utc};
 
-use errors::*;
-use tvmaze_api::{Episode, SearchResult, Show, Status, TvMazeApi};
-use user_data::UserData;
+use crate::errors::*;
+use crate::tvmaze_api::{Episode, SearchResult, Show, Status, TvMazeApi};
+use crate::user_data::UserData;
 
 #[derive(PartialEq)]
 enum HorizontalSeparator {
