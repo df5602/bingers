@@ -1,15 +1,10 @@
 // See clippy issue #3159 (https://github.com/rust-lang-nursery/rust-clippy/issues/3159)
 #![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
 
-#[macro_use]
-extern crate serde_derive;
-
 mod app;
 mod errors;
 mod tvmaze_api;
 mod user_data;
-
-use serde_derive::{Deserialize, Serialize};
 
 use clap::{Arg, SubCommand};
 

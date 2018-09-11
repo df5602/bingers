@@ -3,6 +3,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
+use serde_derive::{Deserialize, Serialize};
+
 use app_dirs::{get_data_root, AppDataType};
 
 use crate::errors::*;

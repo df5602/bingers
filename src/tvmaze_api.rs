@@ -3,6 +3,8 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
 
+use serde_derive::{Deserialize, Serialize};
+
 use hyper::client::HttpConnector;
 use hyper::{self, Client, StatusCode, Uri};
 use hyper_tls::HttpsConnector;
