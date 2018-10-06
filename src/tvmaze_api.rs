@@ -255,10 +255,10 @@ impl TvMazeApi {
     ///
     /// `&self` is moved into the returned future, therefore the future can't live longer
     /// than `&self`.
-    fn make_get_request<'a>(
-        &'a self,
+    fn make_get_request(
+        &self,
         uri: Uri,
-    ) -> impl Future<Item = hyper::Chunk, Error = ::errors::Error> + 'a {
+    ) -> impl Future<Item = hyper::Chunk, Error = ::errors::Error> + '_ {
         let retry_strategy = FibonacciBackoff::from_millis(1000).take(6);
 
         // TODO: use e.g. futures-poll-log crate to trace retry behaviour. I have the impression,
