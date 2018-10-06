@@ -37,7 +37,8 @@ impl App {
                 result.show.status == Status::Running
                     || result.show.status == Status::Ended
                     || result.show.status == Status::ToBeDetermined
-            }).filter(|result| {
+            })
+            .filter(|result| {
                 if let Some(ref language) = result.show.language {
                     if language == "English" {
                         return true;
@@ -168,7 +169,8 @@ impl App {
                     } else {
                         0
                     }
-                }).fold(0, max)
+                })
+                .fold(0, max)
         } else {
             0
         };
@@ -284,12 +286,14 @@ impl App {
             let status = &format!("{}", show.status);
 
             let unwatched = match unwatched_episode_count.get(&show.id) {
-                Some(count) => if *count > 1 {
-                    format!("{} unwatched episodes", count)
-                } else {
-                    assert_eq!(1, *count);
-                    "1 unwatched episode".to_string()
-                },
+                Some(count) => {
+                    if *count > 1 {
+                        format!("{} unwatched episodes", count)
+                    } else {
+                        assert_eq!(1, *count);
+                        "1 unwatched episode".to_string()
+                    }
+                }
                 None => "".to_string(),
             };
 

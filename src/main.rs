@@ -40,11 +40,13 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
             let show = m.value_of("tv_show").unwrap();
             app.add_show(show)?;
         }
-        ("list", Some(m)) => if m.is_present("shows") {
-            app.list_shows()?;
-        } else {
-            app.list_episodes()?;
-        },
+        ("list", Some(m)) => {
+            if m.is_present("shows") {
+                app.list_shows()?;
+            } else {
+                app.list_episodes()?;
+            }
+        }
         ("remove", Some(m)) => {
             let show = m.value_of("tv_show").unwrap();
             app.remove_show(show)?;
@@ -91,42 +93,49 @@ fn main() {
                     .index(1)
                     .value_name("SHOW"),
             ),
-        ).subcommand(
+        )
+        .subcommand(
             SubCommand::with_name("list")
                 .about(
                     "List TV shows or episodes\n
 When no flag is given, episodes will be listed.",
-                ).arg(
+                )
+                .arg(
                     Arg::with_name("shows")
                         .short("s")
                         .long("shows")
                         .help("List shows"),
-                ).arg(
+                )
+                .arg(
                     Arg::with_name("episodes")
                         .short("e")
                         .long("episodes")
                         .conflicts_with("shows")
                         .help("List episodes (default)"),
                 ),
-        ).subcommand(
+        )
+        .subcommand(
             SubCommand::with_name("remove").about("Remove TV show").arg(
                 Arg::with_name("tv_show")
                     .required(true)
                     .index(1)
                     .value_name("SHOW"),
             ),
-        ).subcommand(
+        )
+        .subcommand(
             SubCommand::with_name("watched")
                 .about(
                     "Mark episode as watched\n
 If not specified otherwise, will mark the next unwatched episode as watched.
 Use the --season and --episode arguments to override.",
-                ).arg(
+                )
+                .arg(
                     Arg::with_name("tv_show")
                         .required(true)
                         .index(1)
                         .value_name("SHOW"),
-                ).arg(
+                )
+                .arg(
                     Arg::with_name("season")
                         .short("s")
                         .long("season")
@@ -135,7 +144,8 @@ Use the --season and --episode arguments to override.",
                             "Specify season. \
                              If used without --episode, will mark whole season as watched.",
                         ),
-                ).arg(
+                )
+                .arg(
                     Arg::with_name("episode")
                         .short("e")
                         .long("episode")
@@ -143,7 +153,8 @@ Use the --season and --episode arguments to override.",
                         .requires("season")
                         .help("Specify episode"),
                 ),
-        ).subcommand(
+        )
+        .subcommand(
             SubCommand::with_name("update")
                 .about("Update TV shows and episodes")
                 .arg(
@@ -152,10 +163,12 @@ Use the --season and --episode arguments to override.",
                         .long("force")
                         .help("Force update of all shows and episodes"),
                 ),
-        ).after_help(
+        )
+        .after_help(
             "CREDITS:
     Data provided by TVmaze.com\n",
-        ).get_matches();
+        )
+        .get_matches();
 
     // Run app
     if let Err(ref e) = run(&matches) {
