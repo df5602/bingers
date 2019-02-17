@@ -616,11 +616,9 @@ mod tests {
         assert!(user_data.subscribed_shows().is_empty());
 
         user_data.add_show(star_trek_discovery());
-        assert!(
-            user_data
-                .subscribed_shows()
-                .contains(&star_trek_discovery())
-        );
+        assert!(user_data
+            .subscribed_shows()
+            .contains(&star_trek_discovery()));
     }
 
     #[test]
@@ -629,11 +627,9 @@ mod tests {
         user_data.add_show(star_trek_discovery());
         user_data.add_show(the_orville());
 
-        assert!(
-            user_data
-                .subscribed_shows()
-                .contains(&star_trek_discovery())
-        );
+        assert!(user_data
+            .subscribed_shows()
+            .contains(&star_trek_discovery()));
         assert!(user_data.subscribed_shows().contains(&the_orville()));
         assert_eq!(2, user_data.subscribed_shows().len());
 
@@ -647,20 +643,16 @@ mod tests {
         user_data.add_show(star_trek_discovery());
         user_data.add_show(the_orville());
 
-        assert!(
-            user_data
-                .subscribed_shows()
-                .contains(&star_trek_discovery())
-        );
+        assert!(user_data
+            .subscribed_shows()
+            .contains(&star_trek_discovery()));
         assert!(user_data.subscribed_shows().contains(&the_orville()));
 
         user_data.remove_show(&star_trek_discovery());
 
-        assert!(
-            !user_data
-                .subscribed_shows()
-                .contains(&star_trek_discovery())
-        );
+        assert!(!user_data
+            .subscribed_shows()
+            .contains(&star_trek_discovery()));
         assert!(user_data.subscribed_shows().contains(&the_orville()));
     }
 
@@ -670,12 +662,10 @@ mod tests {
         user_data.add_show(the_orville());
         user_data.add_episodes(vec![the_orville_ep1()]);
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep1()));
     }
 
     #[test]
@@ -684,12 +674,10 @@ mod tests {
         user_data.add_show(the_orville());
         user_data.add_episodes(vec![the_orville_ep1()]);
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep1()));
         assert_eq!(1, user_data.data.unwatched_episodes.len());
 
         user_data.add_episodes(vec![the_orville_ep1()]);
@@ -707,34 +695,26 @@ mod tests {
             star_trek_discovery_ep1(),
         ]);
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep1())
-        );
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep2())
-        );
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep1()));
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep2()));
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
         assert_eq!(3, user_data.data.unwatched_episodes.len());
 
         user_data.remove_episodes(&the_orville());
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
         assert_eq!(1, user_data.data.unwatched_episodes.len());
     }
 
@@ -756,12 +736,10 @@ mod tests {
 
         assert_eq!(Some((1, 1)), user_data.mark_as_watched(20263, None, None));
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep2())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep2()));
         assert_eq!(2, user_data.data.unwatched_episodes.len());
 
         assert_eq!(
@@ -774,12 +752,10 @@ mod tests {
 
         assert_eq!(Some((1, 2)), user_data.mark_as_watched(20263, None, None));
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
         assert_eq!(1, user_data.data.unwatched_episodes.len());
 
         assert_eq!(
@@ -819,12 +795,10 @@ mod tests {
             user_data.mark_as_watched(20263, Some(1), None)
         );
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
         assert_eq!(1, user_data.data.unwatched_episodes.len());
 
         assert!(!user_data.data.unwatched_episodes[0].watched);
@@ -835,12 +809,10 @@ mod tests {
 
         assert_eq!(None, user_data.mark_as_watched(20263, Some(1), None));
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
         assert_eq!(1, user_data.data.unwatched_episodes.len());
 
         assert!(!user_data.data.unwatched_episodes[0].watched);
@@ -934,12 +906,10 @@ mod tests {
             user_data.mark_as_watched(20263, Some(1), Some(1))
         );
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep2())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep2()));
         assert_eq!(2, user_data.data.unwatched_episodes.len());
 
         assert!(!user_data.data.unwatched_episodes[0].watched);
@@ -954,12 +924,10 @@ mod tests {
             user_data.mark_as_watched(20263, Some(1), Some(2))
         );
 
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
         assert_eq!(1, user_data.data.unwatched_episodes.len());
 
         assert!(!user_data.data.unwatched_episodes[0].watched);
@@ -1080,18 +1048,14 @@ mod tests {
             (1, 2),
             user_data.data.subscribed_shows[1].last_watched_episode
         );
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep3())
-        );
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&the_orville_ep4())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep3()));
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&the_orville_ep4()));
         assert!(!user_data.data.unwatched_episodes[1].watched);
         assert!(user_data.data.unwatched_episodes[2].watched);
         assert_eq!(3, user_data.data.unwatched_episodes.len());
@@ -1142,11 +1106,9 @@ mod tests {
             user_data.data.subscribed_shows[1].last_watched_episode
         );
         assert_eq!(1, user_data.data.unwatched_episodes.len());
-        assert!(
-            user_data
-                .data
-                .unwatched_episodes
-                .contains(&star_trek_discovery_ep1())
-        );
+        assert!(user_data
+            .data
+            .unwatched_episodes
+            .contains(&star_trek_discovery_ep1()));
     }
 }

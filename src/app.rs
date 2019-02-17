@@ -46,7 +46,8 @@ impl App {
                 }
 
                 false
-            }) {
+            })
+        {
             println!("Found:\n");
             println!("\t{}\n", result.show);
             print!("Add show? [y (yes); n (no); a (abort)] ");
