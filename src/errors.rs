@@ -1,3 +1,8 @@
+// See error-chain issue #254 (https://github.com/rust-lang-nursery/error-chain/issues/254)
+// This issue is fixed in PR #255 (https://github.com/rust-lang-nursery/error-chain/pull/255), but not
+// yet merged/released.
+#![allow(deprecated)]
+
 use hyper::{StatusCode, Uri};
 
 error_chain! {
