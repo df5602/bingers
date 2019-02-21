@@ -78,9 +78,11 @@ impl UserData {
                     .chain_err(|| format!("Unable to parse version from {:?}", user_data_file))?;
 
                 if detect_version.version > VERSION {
-                    return Err(
-                        ErrorKind::UserDataVersionMismatch(VERSION, detect_version.version).into(),
-                    );
+                    return Err(ErrorKind::UserDataVersionMismatch(
+                        VERSION,
+                        detect_version.version,
+                    )
+                    .into());
                 }
 
                 // Deserialize
