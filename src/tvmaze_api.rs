@@ -238,17 +238,19 @@ impl TvMazeApi {
             println!("GET {}", uri);
         }
 
-        request.map_err(|e| e.into()).and_then(move |res| {
-            if verbose {
-                println!("{} {}", res.status(), uri);
-            }
+        request
+            .map_err(std::convert::Into::into)
+            .and_then(move |res| {
+                if verbose {
+                    println!("{} {}", res.status(), uri);
+                }
 
-            if res.status() != StatusCode::OK {
-                return Err(ErrorKind::HttpError(res.status(), uri).into());
-            }
+                if res.status() != StatusCode::OK {
+                    return Err(ErrorKind::HttpError(res.status(), uri).into());
+                }
 
-            Ok(res)
-        })
+                Ok(res)
+            })
     }
 
     /// Make a GET request. Rate limiting of server is handled with retries.
@@ -275,8 +277,8 @@ impl TvMazeApi {
         );
 
         retry_future
-            .map_err(|e| e.into())
-            .and_then(|res| res.into_body().concat2().map_err(|e| e.into()))
+            .map_err(std::convert::Into::into)
+            .and_then(|res| res.into_body().concat2().map_err(std::convert::Into::into))
     }
 
     /// Searches TvMaze.com for shows with a given name.
