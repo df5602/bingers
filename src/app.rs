@@ -568,7 +568,7 @@ impl App {
             return Ok(());
         }
 
-        let shows = self.api.get_shows(&show_ids)?;
+        let shows = self.api.get_shows_sequential(&show_ids)?;
 
         if self.verbose {
             println!();
@@ -584,7 +584,7 @@ impl App {
         }
 
         // Get episode data
-        let mut episodes = self.api.get_episodes(&show_ids)?;
+        let mut episodes = self.api.get_episodes_sequential(&show_ids)?;
 
         if self.verbose {
             println!();

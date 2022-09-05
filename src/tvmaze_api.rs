@@ -166,7 +166,7 @@ pub struct Episode {
     pub season: usize,
     pub number: usize,
     pub airstamp: Option<DateTime<Utc>>,
-    pub runtime: usize,
+    pub runtime: Option<usize>,
     #[serde(default)]
     pub watched: bool,
 }
@@ -308,6 +308,7 @@ impl TvMazeApi {
             .chain_err(|| "HTTP request failed")
     }
 
+    #[allow(dead_code)]
     pub fn get_shows(&mut self, ids: &[usize]) -> Result<Vec<Show>> {
         let mut requests = FuturesUnordered::new();
         for id in ids {
@@ -335,6 +336,35 @@ impl TvMazeApi {
             .chain_err(|| "HTTP request failed")
     }
 
+    pub fn get_shows_sequential(&mut self, ids: &[usize]) -> Result<Vec<Show>> {
+        let mut shows: Vec<Result<Show>> = Vec::new();
+        for id in ids {
+            // Construct URI
+            let uri = &format!("https://api.tvmaze.com/shows/{}", id);
+            let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
+
+            // Send request and get response
+            let response = self.make_get_request(uri);
+
+            // Deserialize response into a Show
+            let show = response.and_then(|body| {
+                ::serde_json::from_slice::<Show>(&body)
+                    .chain_err(|| "Unable to deserialize HTTP response")
+            });
+
+            // Run future
+            // `self` is borrowed for the lifetime of the response future, which makes it
+            // impossible to borrow `self` mutably here. The RefCell lets us get around this
+            // restriction.
+            shows.push(self.core
+                           .borrow_mut()
+                           .run(show)
+                           .chain_err(|| "HTTP request failed"));
+        }
+
+        shows.into_iter().collect()
+    }
+
     pub fn get_episodes(&mut self, ids: &[usize]) -> Result<Vec<Episode>> {
         let mut requests = FuturesUnordered::new();
         for id in ids {
@@ -348,7 +378,7 @@ impl TvMazeApi {
             // Deserialize response into a Vec<Episode>
             let episodes = response.and_then(move |body| {
                 let episodes: Result<Vec<Episode>> = ::serde_json::from_slice(&body)
-                    .chain_err(|| "Unable to deserialize HTTP response");
+                    .chain_err(|| format!("Unable to deserialize HTTP response [id: {}]", id));
 
                 let mut episodes = match episodes {
                     Ok(episodes) => episodes,
@@ -371,5 +401,57 @@ impl TvMazeApi {
             .borrow_mut()
             .run(requests.concat2())
             .chain_err(|| "HTTP request failed")
+    }
+
+    pub fn get_episodes_sequential(&mut self, ids: &[usize]) -> Result<Vec<Episode>> {
+        let mut eps: Vec<Result<Vec<Episode>>> = Vec::new();
+        for id in ids {
+            // Construct URI
+            let uri = &format!("https://api.tvmaze.com/shows/{}/episodes", id);
+            let uri = Uri::from_str(uri).chain_err(|| format!("Invalid URI [{}]", uri))?;
+
+            // Send request and get response
+            let response = self.make_get_request(uri);
+
+            // Deserialize response into a Vec<Episode>
+            let episodes = response.and_then(move |body| {
+                let episodes: Result<Vec<Episode>> = ::serde_json::from_slice(&body)
+                    .chain_err(|| format!("Unable to deserialize HTTP response [id: {}]", id));
+
+                let mut episodes = match episodes {
+                    Ok(episodes) => episodes,
+                    Err(e) => return Err(e),
+                };
+
+                for episode in &mut episodes {
+                    episode.show_id = *id;
+                }
+
+                Ok(episodes)
+            });
+
+            // Run future
+            // `self` is borrowed for the lifetime of the response future, which makes it
+            // impossible to borrow `self` mutably here. The RefCell lets us get around this
+            // restriction.
+            eps.push(self.core
+                         .borrow_mut()
+                         .run(episodes)
+                         .chain_err(|| "HTTP request failed"));
+        }
+
+        let mut episodes = Vec::new();
+        let mut idx = None;
+        for (i, elem) in eps.iter_mut().enumerate() {
+            match elem {
+                Ok(tmp) => episodes.append(tmp),
+                Err(_) => idx = Some(i),
+            }
+        }
+        
+        if let Some(i) = idx {
+            return eps.remove(i);
+        }
+        Ok(episodes)
     }
 }
